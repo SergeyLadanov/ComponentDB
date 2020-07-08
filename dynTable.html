@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JS</title>
+        <style>
+            table {
+                border-collapse: collapse;
+            }
+            td {
+                border: 1px solid black;
+                padding: 3px;
+                text-align: center;
+            }
+
+            .yellow {
+                background-color: yellow;
+                font-weight: bold;
+                text-align: center;
+            }
+        </style>
+
+        <script>
+            window.onload = function()
+            {
+                var newTable = document.createElement("table");
+
+                for (var y = 0; y <= 9; y++)
+                {
+                    var newRow = newTable.insertRow(y);
+                    for (var  x = 0; x < 9; x++)
+                    {
+                        var newCell = newRow.insertCell(x);
+
+                        if ((y == 0) && (x == 0))
+                        {
+                            newCell.width = 50;
+                        }
+                        else if ((y == 0) && (x > 0))
+                        {
+                            newCell.className = "yellow";
+                            newCell.innerHTML = x;
+                            newCell.width = 50;
+                        }
+                        else if ((y > 0) && (x == 0))
+                        {
+                            newCell.className = "yellow";
+                            newCell.innerHTML = y;
+                        }
+                        else
+                        {
+                            newCell.innerHTML = x*y;
+                        }
+                    }
+                }
+
+                document.body.appendChild(newTable);
+            }
+        </script>
+    </head>
+    <body>
+
+    </body>
+</html>
