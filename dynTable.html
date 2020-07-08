@@ -4,22 +4,38 @@
         <title>JS</title>
         <style>
             table {
+                font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
+                font-size: 14px;
                 border-collapse: collapse;
+                text-align: center;
+            }
+            th, td:first-child {
+                background: #AFCDE7;
+                color: white;
+                padding: 10px 20px;
+            }
+            th, td {
+                border-style: solid;
+                border-width: 0 1px 1px 0;
+                border-color: white;
             }
             td {
-                border: 1px solid black;
-                padding: 3px;
-                text-align: center;
+                background: #D8E6F3;
+            }
+            th:first-child, td:first-child {
+                text-align: left;
             }
 
-            .yellow {
-                background-color: yellow;
-                font-weight: bold;
-                text-align: center;
+            .tittle {
+                background: #AFCDE7;
+                color: white;
+                padding: 10px 20px;
             }
         </style>
 
         <script>
+
+            var columns = ["Тип компонента", "Корпус", "Колонка1", "Колонка2", "Колонка3", "Колонка4"];
             window.onload = function()
             {
                 var newTable = document.createElement("table");
@@ -27,23 +43,19 @@
                 for (var y = 0; y <= 9; y++)
                 {
                     var newRow = newTable.insertRow(y);
-                    for (var  x = 0; x < 9; x++)
+                    for (var  x = 0; x < columns.length; x++)
                     {
                         var newCell = newRow.insertCell(x);
 
-                        if ((y == 0) && (x == 0))
+                        if ((y == 0) && (x >= 0))
                         {
-                            newCell.width = 50;
-                        }
-                        else if ((y == 0) && (x > 0))
-                        {
-                            newCell.className = "yellow";
-                            newCell.innerHTML = x;
-                            newCell.width = 50;
+                            newCell.className = "tittle";
+                            newCell.innerHTML = columns[x];
+                            newCell.width = 130;
                         }
                         else if ((y > 0) && (x == 0))
                         {
-                            newCell.className = "yellow";
+                            newCell.className = "tittle";
                             newCell.innerHTML = y;
                         }
                         else
