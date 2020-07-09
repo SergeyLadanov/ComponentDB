@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Учет компонентов</title>
+        <script type="text/javascript" src="jquery.js"></script>
         <link rel="stylesheet" type="text/css" href="style.css"/>
     </head>
     <body>
@@ -34,8 +35,10 @@
     <script>
         var container = document.getElementById("data");
         
-        var columns = ["Тип компонента", "Корпус", "Колонка1", "Колонка2", "Колонка3", "Колонка4"];
-        window.onload = function()
+        var columns = ["Тип компонента", "Наим. произв.", "Значение", "Точность", "Напр./Мощн.", "Корпус", "Производитель", "Количество", "Примечание", "Действие"];
+
+
+        function showTable()
         {
             var newTable = document.createElement("table");
             var tHead = document.createElement("thead");
@@ -51,9 +54,10 @@
             // Прикрепление заголовков к таблице
             newTable.appendChild(tHead);
             newTable.align = "center";
+            newTable.className = "table_blur";
 
             // Заполнение таблицы
-            for (var y = 0; y <= 9; y++)
+            for (var y = 0; y <= 100; y++)
             {
                 var newRow = newTable.insertRow(y);
                 for (var  x = 0; x < columns.length; x++)
@@ -74,5 +78,17 @@
 
             container.appendChild(newTable);
         }
+        
+        $(document).ready(function () {
+            
+            
+            showTable();
+            //$(".table_blur").floatingScroll();
+            //$(".table").attachScroll();
+            //$('.table').floatingScrollBar();
+            
+            
+        });
+        
     </script>
 </html>
