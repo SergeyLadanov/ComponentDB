@@ -38,8 +38,21 @@
         window.onload = function()
         {
             var newTable = document.createElement("table");
+            var tHead = document.createElement("thead");
+
+            // Генерация заголовков колонок
+            for (var i = 0; i < columns.length; i++)
+            {
+                var th = document.createElement("th");
+                th.innerHTML = columns[i];
+                tHead.appendChild(th);
+            }
+
+            // Прикрепление заголовков к таблице
+            newTable.appendChild(tHead);
             newTable.align = "center";
 
+            // Заполнение таблицы
             for (var y = 0; y <= 9; y++)
             {
                 var newRow = newTable.insertRow(y);
@@ -47,20 +60,14 @@
                 {
                     var newCell = newRow.insertCell(x);
 
-                    if ((y == 0) && (x >= 0))
+                    if ((y > 0) && (x == 0))
                     {
-                        newCell.className = "tittle";
-                        newCell.innerHTML = columns[x];
-                        newCell.width = 130;
-                    }
-                    else if ((y > 0) && (x == 0))
-                    {
-                        newCell.className = "tittle";
-                        newCell.innerHTML = y;
+                        //newCell.className = "tittle";
+                        newCell.innerHTML = y + 1;
                     }
                     else
                     {
-                        newCell.innerHTML = x*y;
+                        newCell.innerHTML = (x + 1) * (y + 1);
                     }
                 }
             }
