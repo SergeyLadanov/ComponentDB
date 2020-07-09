@@ -1,75 +1,71 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>JS</title>
-        <style>
-            table {
-                font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
-                font-size: 14px;
-                border-collapse: collapse;
-                text-align: center;
-            }
-            th, td:first-child {
-                background: #AFCDE7;
-                color: white;
-                padding: 10px 20px;
-            }
-            th, td {
-                border-style: solid;
-                border-width: 0 1px 1px 0;
-                border-color: white;
-            }
-            td {
-                background: #D8E6F3;
-            }
-            th:first-child, td:first-child {
-                text-align: left;
-            }
-
-            .tittle {
-                background: #AFCDE7;
-                color: white;
-                padding: 10px 20px;
-            }
-        </style>
-
-        <script>
-
-            var columns = ["Тип компонента", "Корпус", "Колонка1", "Колонка2", "Колонка3", "Колонка4"];
-            window.onload = function()
-            {
-                var newTable = document.createElement("table");
-
-                for (var y = 0; y <= 9; y++)
-                {
-                    var newRow = newTable.insertRow(y);
-                    for (var  x = 0; x < columns.length; x++)
-                    {
-                        var newCell = newRow.insertCell(x);
-
-                        if ((y == 0) && (x >= 0))
-                        {
-                            newCell.className = "tittle";
-                            newCell.innerHTML = columns[x];
-                            newCell.width = 130;
-                        }
-                        else if ((y > 0) && (x == 0))
-                        {
-                            newCell.className = "tittle";
-                            newCell.innerHTML = y;
-                        }
-                        else
-                        {
-                            newCell.innerHTML = x*y;
-                        }
-                    }
-                }
-
-                document.body.appendChild(newTable);
-            }
-        </script>
+        <title>Учет компонентов</title>
+        <link rel="stylesheet" type="text/css" href="style.css"/>
     </head>
     <body>
+        <div class="wrapper" >
+            <div class="header">
+                <h1 style="text-align:center">УЧЕТ ЭЛЕКТРОННЫХ КОМПОНЕНТОВ</h1>
+            </div>
 
+            <div class="request">
+                <form action="select1.php" method="post">
+                    <p><select size="5" multiple name="hero[]">
+                     <option disabled>Тип компонента</option>
+                     <option value="Чебурашка">Микросхемы</option>
+                     <option selected value="Крокодил Гена">Конденсаторы</option>
+                     <option value="Шапокляк">Резисторы</option>
+                     <option value="Крыса Лариса">Транзисторы</option>
+                    </select></p>
+                    <p><input type="submit" value="Применить фильтры"></p>
+                   </form>
+            </div>
+
+            
+            <div class="table" id = "data">
+   
+            </div>
+
+        </div>
     </body>
+
+    <script>
+        var container = document.getElementById("data");
+        
+        var columns = ["Тип компонента", "Корпус", "Колонка1", "Колонка2", "Колонка3", "Колонка4"];
+        window.onload = function()
+        {
+            var newTable = document.createElement("table");
+            newTable.align = "center";
+
+            for (var y = 0; y <= 9; y++)
+            {
+                var newRow = newTable.insertRow(y);
+                for (var  x = 0; x < columns.length; x++)
+                {
+                    var newCell = newRow.insertCell(x);
+
+                    if ((y == 0) && (x >= 0))
+                    {
+                        newCell.className = "tittle";
+                        newCell.innerHTML = columns[x];
+                        newCell.width = 130;
+                    }
+                    else if ((y > 0) && (x == 0))
+                    {
+                        newCell.className = "tittle";
+                        newCell.innerHTML = y;
+                    }
+                    else
+                    {
+                        newCell.innerHTML = x*y;
+                    }
+                }
+            }
+
+            container.appendChild(newTable);
+        }
+    </script>
 </html>
