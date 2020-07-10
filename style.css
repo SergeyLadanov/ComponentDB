@@ -38,7 +38,7 @@
 
 
 /********************************************/
-.table_blur {
+/*.table_blur {
     background: #f5ffff;
     border-collapse: collapse;
     text-align: left;
@@ -89,6 +89,10 @@
     color: #444444;
     text-shadow: none;
   }
+*/
 
 
-
+  div.dataTables_wrapper {
+    width: 98%;
+    margin: 0 auto;
+}
