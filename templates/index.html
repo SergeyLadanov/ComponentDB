@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Учет компонентов</title>
+        <script type="text/javascript" src=".{{ url_for('static', filename='jquery.js') }}"></script>
+        <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='style.css') }}"/>
+        <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='jquery.dataTables.css') }}">
+        <script type="text/javascript" charset="utf8" src=".{{ url_for('static', filename='jquery.dataTables.js') }}"></script>
+    </head>
+    <body>
+        <div class="wrapper" >
+            <div class="header">
+                <h1 style="text-align:center">УЧЕТ ЭЛЕКТРОННЫХ КОМПОНЕНТОВ</h1>
+            </div>
+
+            <div class="request">
+                <form action="select1.php" method="post">
+                    <p><select size="5" multiple name="hero[]">
+                     <option disabled>Тип компонента</option>
+                     <option value="Чебурашка">Микросхемы</option>
+                     <option selected value="Крокодил Гена">Конденсаторы</option>
+                     <option value="Шапокляк">Резисторы</option>
+                     <option value="Крыса Лариса">Транзисторы</option>
+                    </select></p>
+                    <p><input type="submit" value="Применить фильтры"></p>
+                   </form>
+            </div>
+
+            
+            <div class="table" id = "data">
+                <table id="example" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Office</th>
+                            <th>Extn.</th>
+                            <th>Start date</th>
+                            <th>Salary</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Office</th>
+                            <th>Extn.</th>
+                            <th>Start date</th>
+                            <th>Salary</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+        </div>
+    </body>
+
+    <script>
+        var container = document.getElementById("data");
+        
+        var columns = ["Тип компонента", "Наим. произв.", "Значение", "Точность", "Напр./Мощн.", "Корпус", "Производитель", "Количество", "Примечание", "Действие"];
+
+
+        function showTable()
+        {
+            var newTable = document.createElement("table");
+            var tHead = document.createElement("thead");
+
+            // Генерация заголовков колонок
+            for (var i = 0; i < columns.length; i++)
+            {
+                var th = document.createElement("th");
+                th.innerHTML = columns[i];
+                tHead.appendChild(th);
+            }
+
+            // Прикрепление заголовков к таблице
+            newTable.appendChild(tHead);
+            newTable.align = "center";
+            newTable.className = "table_blur";
+
+            // Заполнение таблицы
+            for (var y = 0; y <= 100; y++)
+            {
+                var newRow = newTable.insertRow(y);
+                for (var  x = 0; x < columns.length; x++)
+                {
+                    var newCell = newRow.insertCell(x);
+
+                    if ((y > 0) && (x == 0))
+                    {
+                        //newCell.className = "tittle";
+                        newCell.innerHTML = y + 1;
+                    }
+                    else
+                    {
+                        newCell.innerHTML = (x + 1) * (y + 1);
+                    }
+                }
+            }
+
+            container.appendChild(newTable);
+        }
+        
+        $(document).ready(function () {
+            
+            $('#example').DataTable( {
+                "ajax": "./get_data"
+            } );
+            //showTable();
+            //$(".table_blur").floatingScroll();
+            //$(".table").attachScroll();
+            //$('.table').floatingScrollBar();
+            
+            
+        });
+        
+    </script>
+</html>
