@@ -102,17 +102,29 @@
             container.appendChild(newTable);
         }
         
-        $(document).ready(function () {
-            
-            $('#example').DataTable( {
+        var table;
+        function update()
+        {
+            table.destroy();
+
+            table = $('#example').DataTable( {
                 "ajax": "./get_data"
             } );
+        }
+
+        $(document).ready(function () {
+            
+
+            table = $('#example').DataTable( {
+                "ajax": "./get_data"
+            } );
+
             //showTable();
             //$(".table_blur").floatingScroll();
             //$(".table").attachScroll();
             //$('.table').floatingScrollBar();
             
-            
+            setInterval('update()',5000);
         });
         
     </script>
