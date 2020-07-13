@@ -39,16 +39,6 @@
                             <th>Salary</th>
                         </tr>
                     </thead>
-                    <tfoot>
-                        <tr>
-                            <th>Name</th>
-                            <th>Position</th>
-                            <th>Office</th>
-                            <th>Extn.</th>
-                            <th>Start date</th>
-                            <th>Salary</th>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
 
@@ -116,7 +106,12 @@
             
 
             table = $('#example').DataTable( {
-                "ajax": "./get_data"
+                serverSide: true,
+                ajax: {
+                    url: './get_data',
+                    type: 'POST',
+                    data: {param1: 'sdfsdf', param2: 'sdfsdfsd'}
+                }
             } );
 
             //showTable();
@@ -124,7 +119,7 @@
             //$(".table").attachScroll();
             //$('.table').floatingScrollBar();
             
-            setInterval('update()',5000);
+            //setInterval('update()',5000);
         });
         
     </script>
