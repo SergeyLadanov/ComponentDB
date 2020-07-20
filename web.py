@@ -482,7 +482,6 @@ def index():
 @app.route('/get_data', methods=['GET', 'POST'])
 def control():
     global data
-    name = request.form.get('param1')
     return data
     
 

@@ -4,6 +4,7 @@
         <title>Учет компонентов</title>
         <script type="text/javascript" src=".{{ url_for('static', filename='jquery.js') }}"></script>
         <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='style.css') }}"/>
+        <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='modal.css') }}"/>
         <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='jquery.dataTables.css') }}">
         <script type="text/javascript" charset="utf8" src=".{{ url_for('static', filename='jquery.dataTables.js') }}"></script>
     </head>
@@ -26,6 +27,26 @@
                    </form>
             </div>
 
+            <h1 style="text-align: center; margin-top: 20px; margin-bottom: 20px;">Модальное окно на чистом CSS</h1>
+            <div class="container">
+                <div style="text-align: center;">
+                <a href="#openModal">Открыть модальное окно</a>
+                </div>
+                <div id="openModal" class="modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Название</h3>
+                        <a href="#close" title="Close" class="close">×</a>
+                    </div>
+                    <div class="modal-body">
+                        Содержимое модального окна...
+                    </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
             
             <div class="table" id = "data">
                 <table id="example" class="display" style="width:100%">
@@ -39,6 +60,16 @@
                             <th>Salary</th>
                         </tr>
                     </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Office</th>
+                            <th>Extn.</th>
+                            <th>Start date</th>
+                            <th>Salary</th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
 
@@ -103,15 +134,22 @@
         }
 
         $(document).ready(function () {
+
+
+            var scrollbar = document.body.clientWidth - window.innerWidth + 'px';
+            console.log(scrollbar);
+            document.querySelector('[href="#openModal"]').addEventListener('click', function () {
+                document.body.style.overflow = 'hidden';
+                document.querySelector('#openModal').style.marginLeft = scrollbar;
+            });
+            document.querySelector('[href="#close"]').addEventListener('click', function () {
+                document.body.style.overflow = 'visible';
+                document.querySelector('#openModal').style.marginLeft = '0px';
+            });
             
 
             table = $('#example').DataTable( {
-                serverSide: true,
-                ajax: {
-                    url: './get_data',
-                    type: 'POST',
-                    data: {param1: 'sdfsdf', param2: 'sdfsdfsd'}
-                }
+                "ajax": "./get_data"
             } );
 
             //showTable();
@@ -119,7 +157,7 @@
             //$(".table").attachScroll();
             //$('.table').floatingScrollBar();
             
-            //setInterval('update()',5000);
+            setInterval('update()',5000);
         });
         
     </script>
