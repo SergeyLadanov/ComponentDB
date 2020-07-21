@@ -41,6 +41,7 @@
                     </div>
                     <div class="modal-body">
                         Содержимое модального окна...
+                        <button id="addRow">Добавить строку</button>
                     </div>
                     </div>
                 </div>
@@ -60,16 +61,6 @@
                             <th>Salary</th>
                         </tr>
                     </thead>
-                    <tfoot>
-                        <tr>
-                            <th>Name</th>
-                            <th>Position</th>
-                            <th>Office</th>
-                            <th>Extn.</th>
-                            <th>Start date</th>
-                            <th>Salary</th>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
 
@@ -149,7 +140,37 @@
             
 
             table = $('#example').DataTable( {
-                "ajax": "./get_data"
+                "ajax": "./get_data",
+                scrollY:        '50vh',
+                scrollCollapse: true,
+                scrollX: true
+//                paging:         false
+            } );
+
+
+            var counter = 1;
+ 
+            $('#addRow').on( 'click', function () {
+                table.row.add( [
+                    counter +'.1',
+                    counter +'.2',
+                    counter +'.3',
+                    counter +'.4',
+                    counter +'.5',
+                    counter +'.6'
+                    
+                ] ).draw( false );
+
+                counter++;
+
+
+                var link = document.createElement('a');
+                link.setAttribute('href', '#close');
+                link.setAttribute('close', 'close');
+                link.click();
+
+                document.body.style.overflow = 'visible';
+                document.querySelector('#openModal').style.marginLeft = '0px';
             } );
 
             //showTable();
@@ -157,7 +178,7 @@
             //$(".table").attachScroll();
             //$('.table').floatingScrollBar();
             
-            setInterval('update()',5000);
+            //setInterval('update()',5000);
         });
         
     </script>
