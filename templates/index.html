@@ -158,10 +158,18 @@
                     "search": "Поиск"
                 },
                 "pagingType": "full_numbers",
-                "lengthMenu": [[25, 50, -1], [25, 50, "Все"]]
+                "lengthMenu": [[50], [50]],
+                "dom": '<"toolbar">frtip' // Включение кастомного тулбара
             } );
+//Свой тулбар
 
+            var newButton = document.createElement("button");
+            newButton.innerHTML = "Добавить позицию";
 
+            var newButton1 = document.createElement("button");
+            newButton1.innerHTML = "Удалить позицию";
+            //$("div.toolbar").html('<button>Добавить позицию</button>');
+            $("div.toolbar").html(newButton.outerHTML + newButton1.outerHTML);
             var counter = 1;
  
             $('#addRow').on( 'click', function () {
