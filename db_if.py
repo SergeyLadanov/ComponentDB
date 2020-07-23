@@ -21,16 +21,16 @@ class BaseModel(Model):
 
 class Component(BaseModel):
     ID = BigAutoField()
-    Type = CharField(null = True)
-    ManufacturerPartNumber = CharField(null = True)
-    Value = FloatField(null = True)
-    Units = CharField(null = True)
-    Tolerance = CharField(null = True)
-    PowerVoltage = CharField(null = True)
-    Case = CharField(null = True)
-    Manufacturer = CharField(null = True)
+    Type = CharField(null = False)
+    ManufacturerPartNumber = CharField(null = True, default="-")
+    Value = FloatField(null = True, default="-")
+    Units = CharField(null = True, default="-")
+    Tolerance = CharField(null = True, default="-")
+    PowerVoltage = CharField(null = True, default="-")
+    Case = CharField(null = True, default="-")
+    Manufacturer = CharField(null = True, default="-")
     Quantity = BigIntegerField(null = False, default=1)
-    CellNumber = CharField(null = True)
+    CellNumber = CharField(null = False)
     ChangeDate = DateTimeField(default=datetime.now)
 
 
