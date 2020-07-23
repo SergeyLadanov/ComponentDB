@@ -75,10 +75,20 @@
 
     <script>
         var container = document.getElementById("data");
+        var table;
         
-        var columns = ["Тип компонента", "Наим. произв.", "Значение", "Точность", "Напр./Мощн.", "Корпус", "Производитель", "Количество", "Примечание", "Действие"];
 
+        function createTableToolBar()
+        {
+            var toolbar = document.createElement("div");
+            toolbar.className = "tableToolbar";
+            
+            return;
+        }
+        
+ //       var columns = ["Тип компонента", "Наим. произв.", "Значение", "Точность", "Напр./Мощн.", "Корпус", "Производитель", "Количество", "Примечание", "Действие"];
 
+/*
         function showTable()
         {
             var newTable = document.createElement("table");
@@ -119,8 +129,9 @@
 
             container.appendChild(newTable);
         }
+        */
         
-        var table;
+
         function update()
         {
             table.destroy();
