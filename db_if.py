@@ -1,6 +1,6 @@
 import peewee
 from peewee import *
-from datetime import date
+from datetime import date, datetime
 
  
 user = 'root'
@@ -10,7 +10,7 @@ db_name = 'test'
 dbhandle = MySQLDatabase(
     db_name, user=user,
     password=password,
-    host='components'
+    host='localhost'
 )
 
 
@@ -19,24 +19,26 @@ class BaseModel(Model):
     class Meta:
         database = dbhandle
 
-class compdescription(BaseModel):
-    name = CharField()
-    birthday = DateField()
-
-
-class Pet(BaseModel):
-    owner = ForeignKeyField(Person, backref='pets')
-    name = CharField()
-    animal_type = CharField()
-
-
+class Component(BaseModel):
+    ID = BigAutoField()
+    Type = CharField(null = True)
+    ManufacturerPartNumber = CharField(null = True)
+    Value = FloatField(null = True)
+    Units = CharField(null = True)
+    Tolerance = CharField(null = True)
+    PowerVoltage = CharField(null = True)
+    Case = CharField(null = True)
+    Manufacturer = CharField(null = True)
+    Quantity = BigIntegerField(null = False, default=1)
+    CellNumber = CharField(null = True)
+    ChangeDate = DateTimeField(default=datetime.now)
 
 
 dbhandle.connect()
 
 #uncle_bob = Person(name='Ваня', birthday=date(1960, 1, 15))
 #uncle_bob.save() # bob is now stored in the database
-#dbhandle.create_tables([Person, Pet])
+dbhandle.create_tables([Component])
 
 #uncle_bob = Person(name='Bob', birthday=date(1960, 1, 15))
 #uncle_bob.save() # bob is now stored in the database
@@ -55,9 +57,9 @@ dbhandle.connect()
 
 #herb_fido.owner = uncle_bob
 #herb_fido.save()
-query = Pet.select().where(Pet.animal_type == 'cat', Pet.name == 'Kitty')
-for pet in query:
-    print(pet.name, pet.owner.name)
+#query = Pet.select().where(Pet.animal_type == 'cat', Pet.name == 'Kitty')
+#for pet in query:
+#    print(pet.name, pet.owner.name)
 
 
 print("Test")
