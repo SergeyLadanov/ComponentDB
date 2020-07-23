@@ -137,13 +137,19 @@ a.buttonRemove {
   text-decoration: none;
   padding: .8em 1em calc(.8em + 3px);
   border-radius: 3px;
-  background: rgb(64,199,129);
-  box-shadow: 0 -3px rgb(53,167,110) inset;
+  background: rgb(199, 64, 64);
+  box-shadow: 0 -3px rgb(167, 53, 53) inset;
   transition: 0.2s;
-  margin-left: 25px;
+  margin-left: 15px;
 } 
-a.buttonRemove:hover { background: rgb(53, 167, 110); }
+a.buttonRemove:hover { background: rgb(167, 53, 53); }
 a.buttonRemove:active {
-  background: rgb(33,147,90);
-  box-shadow: 0 3px rgb(33,147,90) inset;
+  background: rgb(147, 33, 33);
+  box-shadow: 0 3px rgb(147, 33, 33) inset;
+}
+
+/********************************/
+.tableToolbar{
+  width: 100%;
+  text-align: left;
 }
