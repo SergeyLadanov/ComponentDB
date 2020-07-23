@@ -31,6 +31,7 @@
             <div class="container">
                 <div style="text-align: center;">
                 <a href="#openModal">Открыть модальное окно</a>
+                <input type="text" id="text" name="text" value="some text" />
                 </div>
                 <div id="openModal" class="modal">
                     <div class="modal-dialog">
@@ -87,7 +88,7 @@
         var container = document.getElementById("data");
         var table;
         var elementTypes = ["Все", "Конденсаторы", "Резисторы", "Транзисторы", "Катушки индуктивности", "Микросхемы", "Модули"];
-        
+        var changeNumber = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
         function createTableToolBar()
         {
@@ -122,8 +123,55 @@
             buttonRemove.href = "";
             buttonRemove.className = "buttonRemove";
             buttonRemove.innerHTML = "Удалить позицию";
-
             toolbar.appendChild(buttonRemove);
+
+
+            // Создание кнопок
+            var buttonPlus = document.createElement("a");
+            buttonPlus.href = "#openModal";
+            buttonPlus.className = "buttonPlus";
+            buttonPlus.innerHTML = "+";
+
+            toolbar.appendChild(buttonPlus);
+
+            // Кнопка удалить
+            var buttonMinus = document.createElement("a");
+            buttonMinus.href = "";
+            buttonMinus.className = "buttonMinus";
+            buttonMinus.innerHTML = "-";
+            toolbar.appendChild(buttonMinus);
+
+
+            // Генерация списка чисел
+            span = document.createElement("span");
+            select = document.createElement("select");
+
+            toolbar.className = "tableToolbar";
+            span.className = "custom-dropdown big";
+            toolbar.appendChild(span);
+            span.appendChild(select);
+
+            // Генерация списка типов элементов
+            for (var i = 0; i < changeNumber.length; i++)
+            {
+                var option = document.createElement("option");
+                option.innerHTML = changeNumber[i];
+                select.appendChild(option);
+            }
+
+            span = document.createElement("span");
+            span.innerHTML = "шт.       ";
+            toolbar.appendChild(span);
+
+
+            span = document.createElement("span");
+            span.innerHTML = "Колич: ";
+            toolbar.appendChild(span);
+
+            span = document.createElement("span");
+            span.innerHTML = "";
+            toolbar.appendChild(span);
+
             
            
 
@@ -231,16 +279,6 @@
             } );
 
 //Свой тулбар
-
-            var newButton = document.createElement("button");
-            newButton.innerHTML = "Добавить позицию";
-
-            var newButton1 = document.createElement("button");
-            newButton1.innerHTML = "Удалить позицию";
-
-            var select = document.createElement("select");
-            //$("div.toolbar").html('<button>Добавить позицию</button>');
-            //$("div.toolbar").html(select.outerHTML + newButton.outerHTML + newButton1.outerHTML);
             $("div.toolbar").html(createTableToolBar().outerHTML);
             var counter = 1;
  
