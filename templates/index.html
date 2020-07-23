@@ -33,18 +33,18 @@
                 <a href="#openModal">Открыть модальное окно</a>
                 </div>
                 <div id="openModal" class="modal">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Название</h3>
-                        <a href="#close" title="Close" class="close">×</a>
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Название</h3>
+                            <a href="#close" title="Close" class="close">×</a>
+                        </div>
+                        <div class="modal-body">
+                            Содержимое модального окна...
+                            <button id="addRow">Добавить строку</button>
+                        </div>
+                        </div>
                     </div>
-                    <div class="modal-body">
-                        Содержимое модального окна...
-                        <button id="addRow">Добавить строку</button>
-                    </div>
-                    </div>
-                </div>
                 </div>
             </div>
 
@@ -76,18 +76,55 @@
     <script>
         var container = document.getElementById("data");
         var table;
+        var elementTypes = ["Все", "Конденсаторы", "Резисторы", "Транзисторы", "Катушки индуктивности", "Микросхемы", "Модули"];
         
 
         function createTableToolBar()
         {
+            // Создание выпадающего списка
             var toolbar = document.createElement("div");
+            var span = document.createElement("span");
+            var select = document.createElement("select");
+
             toolbar.className = "tableToolbar";
+            span.className = "custom-dropdown big";
+            toolbar.appendChild(span);
+            span.appendChild(select);
+
+            // Генерация списка типов элементов
+            for (var i = 0; i < elementTypes.length; i++)
+            {
+                var option = document.createElement("option");
+                option.innerHTML = elementTypes[i];
+                select.appendChild(option);
+            }
+
+            // Создание кнопок
+            var buttonAdd = document.createElement("a");
+            buttonAdd.href = "#openModal";
+            buttonAdd.className = "buttonAdd";
+            buttonAdd.innerHTML = "Добавить позицию";
+
+            toolbar.appendChild(buttonAdd);
+
+            // Кнопка удалить
+            var buttonRemove = document.createElement("a");
+            buttonRemove.href = "";
+            buttonRemove.className = "buttonRemove";
+            buttonRemove.innerHTML = "Удалить позицию";
+
+            toolbar.appendChild(buttonRemove);
             
-            return;
+           
+
+
+            
+            
+            return toolbar;
         }
         
  //       var columns = ["Тип компонента", "Наим. произв.", "Значение", "Точность", "Напр./Мощн.", "Корпус", "Производитель", "Количество", "Примечание", "Действие"];
-
+       
 /*
         function showTable()
         {
@@ -193,7 +230,8 @@
 
             var select = document.createElement("select");
             //$("div.toolbar").html('<button>Добавить позицию</button>');
-            $("div.toolbar").html(select.outerHTML + newButton.outerHTML + newButton1.outerHTML);
+            //$("div.toolbar").html(select.outerHTML + newButton.outerHTML + newButton1.outerHTML);
+            $("div.toolbar").html(createTableToolBar().outerHTML);
             var counter = 1;
  
             $('#addRow').on( 'click', function () {
