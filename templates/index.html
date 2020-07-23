@@ -62,7 +62,7 @@
                             <th>Корпус</th>
                             <th>Производитель</th>
                             <th>Количество</th>
-                            <th>Примечание</th>
+                            <th>Номер ячейки</th>
                         </tr>
                     </thead>
                 </table>
@@ -145,10 +145,16 @@
 
             table = $('#example').DataTable( {
                 "ajax": "./get_data",
-                scrollY:        '70vh',
- //               scrollCollapse: true,
-                scrollX: true
-//                paging:         false
+                scrollY:        '60vh',
+                scrollX: true,
+                "language": {
+                    "lengthMenu": "Показать _MENU_ записей на странице",
+                    "zeroRecords": "По Вашему запросу ничего не найдено",
+                    "info": "Показано страниц _PAGE_ из _PAGES_",
+                    "infoEmpty": "Нет ни одной записи",
+                    "infoFiltered": "(Найдено из _MAX_ записей)",
+                    "search": "Поиск"
+                }
             } );
 
 
