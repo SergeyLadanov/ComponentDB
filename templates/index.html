@@ -7,6 +7,7 @@
         <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='modal.css') }}"/>
         <link rel="stylesheet" type="text/css" href=".{{ url_for('static', filename='jquery.dataTables.css') }}">
         <script type="text/javascript" charset="utf8" src=".{{ url_for('static', filename='jquery.dataTables.js') }}"></script>
+        <script type="text/javascript" charset="utf8" src=".{{ url_for('static', filename='toolbar.js') }}"></script>
     </head>
     <body>
         <div class="wrapper" >
@@ -14,7 +15,7 @@
                 <h1 style="text-align:center">УЧЕТ ЭЛЕКТРОННЫХ КОМПОНЕНТОВ</h1>
             </div>
 
-            <div class="request">
+         <!-- <div class="request">
                 <form action="select1.php" method="post">
                     <p><select size="5" multiple name="hero[]">
                      <option disabled>Тип компонента</option>
@@ -25,13 +26,13 @@
                     </select></p>
                     <p><input type="submit" value="Применить фильтры"></p>
                    </form>
-            </div>
+            </div> 
 
-            <h1 style="text-align: center; margin-top: 20px; margin-bottom: 20px;">Модальное окно на чистом CSS</h1>
+            <h1 style="text-align: center; margin-top: 20px; margin-bottom: 20px;">Модальное окно на чистом CSS</h1> -->  
             <div class="container">
                 <div style="text-align: center;">
-                <a href="#openModal">Открыть модальное окно</a>
-                <input type="text" id="text" name="text" value="some text" />
+                <!--<a href="#openModal">Открыть модальное окно</a>-->
+                <!--<input type="text" id="text" name="text" value="some text" />-->
                 </div>
                 <div id="openModal" class="modal">
                     <div class="modal-dialog">
@@ -87,144 +88,6 @@
     <script>
         var container = document.getElementById("data");
         var table;
-        var elementTypes = ["Все", "Конденсаторы", "Резисторы", "Транзисторы", "Катушки индуктивности", "Микросхемы", "Модули"];
-        var changeNumber = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-
-        function createTableToolBar()
-        {
-            // Создание выпадающего списка
-            var toolbar = document.createElement("div");
-            var span = document.createElement("span");
-            var select = document.createElement("select");
-
-            toolbar.className = "tableToolbar";
-            span.className = "custom-dropdown big";
-            toolbar.appendChild(span);
-            span.appendChild(select);
-
-            // Генерация списка типов элементов
-            for (var i = 0; i < elementTypes.length; i++)
-            {
-                var option = document.createElement("option");
-                option.innerHTML = elementTypes[i];
-                select.appendChild(option);
-            }
-
-            // Создание кнопок
-            var buttonAdd = document.createElement("a");
-            buttonAdd.href = "#openModal";
-            buttonAdd.className = "buttonAdd";
-            buttonAdd.innerHTML = "Добавить позицию";
-
-            toolbar.appendChild(buttonAdd);
-
-            // Кнопка удалить
-            var buttonRemove = document.createElement("a");
-            buttonRemove.href = "";
-            buttonRemove.className = "buttonRemove";
-            buttonRemove.innerHTML = "Удалить позицию";
-            toolbar.appendChild(buttonRemove);
-
-
-            // Создание кнопок
-            var buttonPlus = document.createElement("a");
-            buttonPlus.href = "#openModal";
-            buttonPlus.className = "buttonPlus";
-            buttonPlus.innerHTML = "+";
-
-            toolbar.appendChild(buttonPlus);
-
-            // Кнопка удалить
-            var buttonMinus = document.createElement("a");
-            buttonMinus.href = "";
-            buttonMinus.className = "buttonMinus";
-            buttonMinus.innerHTML = "-";
-            toolbar.appendChild(buttonMinus);
-
-
-            // Генерация списка чисел
-            span = document.createElement("span");
-            select = document.createElement("select");
-
-            toolbar.className = "tableToolbar";
-            span.className = "custom-dropdown big";
-            toolbar.appendChild(span);
-            span.appendChild(select);
-
-            // Генерация списка типов элементов
-            for (var i = 0; i < changeNumber.length; i++)
-            {
-                var option = document.createElement("option");
-                option.innerHTML = changeNumber[i];
-                select.appendChild(option);
-            }
-
-            span = document.createElement("span");
-            span.innerHTML = "шт.       ";
-            toolbar.appendChild(span);
-
-
-            span = document.createElement("span");
-            span.innerHTML = "Колич: ";
-            toolbar.appendChild(span);
-
-            span = document.createElement("span");
-            span.innerHTML = "";
-            toolbar.appendChild(span);
-
-            
-           
-
-
-            
-            
-            return toolbar;
-        }
-        
- //       var columns = ["Тип компонента", "Наим. произв.", "Значение", "Точность", "Напр./Мощн.", "Корпус", "Производитель", "Количество", "Примечание", "Действие"];
-       
-/*
-        function showTable()
-        {
-            var newTable = document.createElement("table");
-            var tHead = document.createElement("thead");
-
-            // Генерация заголовков колонок
-            for (var i = 0; i < columns.length; i++)
-            {
-                var th = document.createElement("th");
-                th.innerHTML = columns[i];
-                tHead.appendChild(th);
-            }
-
-            // Прикрепление заголовков к таблице
-            newTable.appendChild(tHead);
-            newTable.align = "center";
-            newTable.className = "table_blur";
-
-            // Заполнение таблицы
-            for (var y = 0; y <= 100; y++)
-            {
-                var newRow = newTable.insertRow(y);
-                for (var  x = 0; x < columns.length; x++)
-                {
-                    var newCell = newRow.insertCell(x);
-
-                    if ((y > 0) && (x == 0))
-                    {
-                        //newCell.className = "tittle";
-                        newCell.innerHTML = y + 1;
-                    }
-                    else
-                    {
-                        newCell.innerHTML = (x + 1) * (y + 1);
-                    }
-                }
-            }
-
-            container.appendChild(newTable);
-        }
-        */
         
 
         function update()
@@ -241,14 +104,7 @@
 
             var scrollbar = document.body.clientWidth - window.innerWidth + 'px';
             console.log(scrollbar);
-            document.querySelector('[href="#openModal"]').addEventListener('click', function () {
-                document.body.style.overflow = 'hidden';
-                document.querySelector('#openModal').style.marginLeft = scrollbar;
-            });
-            document.querySelector('[href="#close"]').addEventListener('click', function () {
-                document.body.style.overflow = 'visible';
-                document.querySelector('#openModal').style.marginLeft = '0px';
-            });
+
             
 
             table = $('#example').DataTable( {
@@ -280,6 +136,16 @@
 
 //Свой тулбар
             $("div.toolbar").html(createTableToolBar().outerHTML);
+
+
+            document.querySelector('[href="#openModal"]').addEventListener('click', function () {
+                document.body.style.overflow = 'hidden';
+                document.querySelector('#openModal').style.marginLeft = scrollbar;
+            });
+            document.querySelector('[href="#close"]').addEventListener('click', function () {
+                document.body.style.overflow = 'visible';
+                document.querySelector('#openModal').style.marginLeft = '0px';
+            });
             var counter = 1;
  
             $('#addRow').on( 'click', function () {
@@ -305,11 +171,7 @@
                 document.querySelector('#openModal').style.marginLeft = '0px';
             } );
 
-            //showTable();
-            //$(".table_blur").floatingScroll();
-            //$(".table").attachScroll();
-            //$('.table').floatingScrollBar();
-            
+
             //setInterval('update()',5000);
         });
         

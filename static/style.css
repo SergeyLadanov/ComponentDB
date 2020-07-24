@@ -165,28 +165,10 @@ a.buttonMinus {
   background: rgb(199, 64, 64);
   box-shadow: 0 -3px rgb(167, 53, 53) inset;
   transition: 0.2s;
-  margin-left: 5px;
+  margin-left: 90px;
 } 
 a.buttonMinus:hover { background: rgb(167, 53, 53); }
 a.buttonMinus:active {
   background: rgb(147, 33, 33);
   box-shadow: 0 3px rgb(147, 33, 33) inset;
-}
-
-
-a.buttonPlus {
-  font-weight: 700;
-  color: white;
-  text-decoration: none;
-  padding: .8em 1em calc(.8em + 3px);
-  border-radius: 3px;
-  background: rgb(64,199,129);
-  box-shadow: 0 -3px rgb(53,167,110) inset;
-  transition: 0.2s;
-  margin-left: 90px;
-} 
-a.buttonPlus:hover { background: rgb(53, 167, 110); }
-a.buttonPlus:active {
-  background: rgb(33,147,90);
-  box-shadow: 0 3px rgb(33,147,90) inset;
 }
