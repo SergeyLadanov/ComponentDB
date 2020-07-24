@@ -46,7 +46,7 @@ body {
 
   @media (min-width: 576px) {
     .modal-dialog {
-      max-width: 800px;
+      max-width: 90%;
       margin: 30px auto;
     }
   }
@@ -136,3 +136,21 @@ body {
     padding: 15px;
     overflow: auto;
   }
+
+  /************Оформление полей****************/
+.modal-citem{
+  float: left;
+  width: 17%;
+  height: 100px;
+  text-align: left;
+  background: rgb(255, 255, 255);
+  margin: 10px 1.5%;
+  position: relative;
+}
+
+
+.modal-textinput{
+  height: 35px;
+  margin-top: 11px;
+  font-size: 1.2vw;
+}

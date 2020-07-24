@@ -14,64 +14,76 @@
             <div class="header">
                 <h1 style="text-align:center">УЧЕТ ЭЛЕКТРОННЫХ КОМПОНЕНТОВ</h1>
             </div>
-
-         <!-- <div class="request">
-                <form action="select1.php" method="post">
-                    <p><select size="5" multiple name="hero[]">
-                     <option disabled>Тип компонента</option>
-                     <option value="Чебурашка">Микросхемы</option>
-                     <option selected value="Крокодил Гена">Конденсаторы</option>
-                     <option value="Шапокляк">Резисторы</option>
-                     <option value="Крыса Лариса">Транзисторы</option>
-                    </select></p>
-                    <p><input type="submit" value="Применить фильтры"></p>
-                   </form>
-            </div> 
-
-            <h1 style="text-align: center; margin-top: 20px; margin-bottom: 20px;">Модальное окно на чистом CSS</h1> -->  
             <div class="container">
-                <div style="text-align: center;">
-                <!--<a href="#openModal">Открыть модальное окно</a>-->
-                <!--<input type="text" id="text" name="text" value="some text" />-->
-                </div>
                 <div id="openModal" class="modal">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title">Добавление позиции</h3>
-                            <a href="#close" title="Close" class="close">×</a>
-                        </div>
-                        <div class="modal-body">
-                            <h3>Тип компонента:</h3>
-                                <span class = "custom-dropdown big">
-                                    <select class="tableToolbar" id = "elemType">
-                                  <!--   <option>Конденсатор</option>
-                                        <option>Резистор</option>
-                                        <option>Катушка индуктивности</option>
-                                        <option>Микросхема</option>
-                                        <option>Транзистор</option>
-                                        <option>Модуль</option> -->   
-                                    </select>
-                                </span>
-                            <h3>Наименование:</h3>
-                                <input type = "text"/>
-                            <h3>Единицы измерения:</h3>
-                                <span class = "custom-dropdown big">
-                                    <select class="tableToolbar" id = "unitType">
-                               <!--         <option>мкФ</option>
-                                        <option>пФ</option>
-                                        <option>Ом</option>
-                                        <option>МОм</option>
-                                        <option>кОм</option>
-                                        <option>мкГн</option>
-                                        <option>Гн</option> -->
-                                    </select>
-                                </span>
-                            <h3>Значение:</h3>
-                                <input type = "text"/>
-                            <h3>Количество:</h3>
-                            <button id="addRow">Добавить строку</button>
-                        </div>
+                            <div class="modal-header">
+                                <h3 class="modal-title">Добавление позиции</h3>
+                                <a href="#close" title="Close" class="close">×</a>
+                            </div>
+                            <div class="modal-body">
+
+                                <div class="modal-citem">
+                                    <h3>Тип компонента:</h3>
+                                    <span class = "custom-dropdown big">
+                                        <select class="tableToolbar" id = "elemType"></select>
+                                    </span>
+                                </div>
+                                <div class="modal-citem">
+                                    <h3>Наименование:</h3>
+                                    <input type = "text" class = "modal-textinput"/>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <h3>Количество:</h3>
+                                    <input type = "number" class = "modal-textinput" value = "1" min = "0" step = "1"/>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <h3>Производитель:</h3>
+                                    <input type = "text" class = "modal-textinput"/>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <h3>Номер ячейки:</h3>
+                                    <input type = "text" class = "modal-textinput"/>
+                                </div>
+
+
+                                <div class="modal-citem">
+                                    <h3>Значение:</h3>
+                                    <input type = "number" class = "modal-textinput" value = "0" min = "0" step = "0.01"/>
+                                </div>
+
+                                
+                                <div class="modal-citem">
+                                    <h3>Единицы измерения:</h3>
+                                    <span class = "custom-dropdown big">
+                                        <select class="tableToolbar" id = "unitType"></select>
+                                    </span>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <h3>Точность:</h3>
+                                    <input type = "text" class = "modal-textinput"/>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <h3>Напряжение/Мощность:</h3>
+                                    <input type = "text" class = "modal-textinput"/>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <h3>Корпус:</h3>
+                                    <input type = "text" class = "modal-textinput"/>
+                                </div>
+
+                                <div class="modal-citem">
+                                    <button id="addRow">Добавить строку</button>
+                                </div>
+                                
+                            </div>
                         </div>
                     </div>
                 </div>
