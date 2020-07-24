@@ -166,6 +166,8 @@
             
             initAddSelect();
 
+
+
             // Вызов события изменения select для заполнения данными
             elemType.dispatchEvent(new Event('change'));
             
@@ -239,6 +241,25 @@
                 document.body.style.overflow = 'visible';
                 document.querySelector('#openModal').style.marginLeft = '0px';
             } );
+
+
+
+
+
+            // Обработка нажатия кнопки удаления позциии
+            $('#buttonRemove').on('click', function(){
+                if (confirm("Удалить позицию?"))
+                {
+                    alert("Позциия удалена");
+                }
+                else
+                {
+                    alert("Запрос на удаление позиции отменен");
+                }
+                
+                return false;
+            });
+
 
 
             //setInterval('update()',5000);

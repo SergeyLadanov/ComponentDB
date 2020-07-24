@@ -33,6 +33,7 @@ function createTableToolBar()
     // Кнопка удалить
     var buttonRemove = document.createElement("a");
     buttonRemove.href = "";
+    buttonRemove.id = "buttonRemove";
     buttonRemove.className = "buttonRemove";
     buttonRemove.innerHTML = "Удалить позицию";
     toolbar.appendChild(buttonRemove);
