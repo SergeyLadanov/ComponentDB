@@ -125,12 +125,14 @@
         var condUnit = ["пФ", "мкФ"];
         var indUnit = ["мкГн", "Гн"];
 
-        var types = ["Конденсатор", "Резистор", "Катушка индуктивности", "Микросхема", "Транзистор", "Модуль"];
+        var types=[];
         var units = [["пФ", "мкФ"], ["Ом", "кОм", "МОм"],  ["мкГн", "Гн"]];
 
         // Инициализация select для типов компонентов в модальном окне
         function initAddSelect()
         {
+            types = JSON.parse(JSON.stringify(elementTypes));
+            types.shift();
             for (var i = 0; i < types.length; i ++)
             {
                 elemType.options[i] = new Option(types[i]);
