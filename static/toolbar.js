@@ -72,6 +72,7 @@ function createTableToolBar()
 
     span = document.createElement("span");
     span.innerHTML = "Колич: ";
+    span.className = "select-cnt";
     toolbar.appendChild(span);
 
     span = document.createElement("span");

@@ -172,3 +172,8 @@ a.buttonMinus:active {
   background: rgb(147, 33, 33);
   box-shadow: 0 3px rgb(147, 33, 33) inset;
 }
+
+
+.select-cnt{
+  margin-left: 30px;
+}
