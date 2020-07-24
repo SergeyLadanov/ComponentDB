@@ -124,18 +124,25 @@
                 "dom": '<"toolbar">frtip' // Включение кастомного тулбара
             } );
 
+
+
+            //Свой тулбар
+            $("div.toolbar").html(createTableToolBar().outerHTML);
+
+
             $('#example tbody').on( 'click', 'tr', function () {
+
+                var data = table.row( this ).data();
                 if ( $(this).hasClass('selected') ) {
                     $(this).removeClass('selected');
             }
             else {
                     table.$('tr.selected').removeClass('selected');
                     $(this).addClass('selected');
+                    var cnt = document.getElementById("secelctcnt");
+                    cnt.innerHTML = data[9];
                 }
             } );
-
-//Свой тулбар
-            $("div.toolbar").html(createTableToolBar().outerHTML);
 
 
             document.querySelector('[href="#openModal"]').addEventListener('click', function () {

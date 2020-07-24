@@ -75,6 +75,7 @@ function createTableToolBar()
 
     span = document.createElement("span");
     span.innerHTML = "";
+    span.id = "secelctcnt";
     toolbar.appendChild(span);
 
     
