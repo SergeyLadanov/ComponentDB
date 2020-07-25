@@ -162,6 +162,52 @@
             
         });
 
+        // Функция заполнения элементов модального окна при выделении строки таблицы
+        function updateModalContent(data)
+        {
+            var addType = document.getElementById("add-type");
+            var addName = document.getElementById("add-name");
+            var addCnt = document.getElementById("add-count");
+            var addManufacturer = document.getElementById("add-manufacturer");
+            var addCellNum = document.getElementById("add-cellnumber");
+            var addValue = document.getElementById("add-value");
+            var addUnit = document.getElementById("add-unit");
+            var addTol = document.getElementById("add-tolerance");
+            var addPower = document.getElementById("add-power");
+            var addCase = document.getElementById("add-case");
+
+            if (data == null)
+            {
+                addType.value = "Конденсатор";
+                addName.value = "";
+                addCnt.value = "1";
+                addManufacturer.value = "";
+                addCellNum.value = "";
+                addTol.value = "";
+                addPower.value = "";
+                addCase.value = "";
+                addValue.value = "";
+                elemType.dispatchEvent(new Event('change'));
+            }
+            else
+            {
+                addType.value = data[1];
+                elemType.dispatchEvent(new Event('change'));
+                addName.value = data[2];
+                addCnt.value = "1";
+                addManufacturer.value = data[8];
+                addCellNum.value = data[9];
+                addTol.value = data[5];
+                addPower.value = data[6];
+                addCase.value = data[7];
+                addValue.value = data[3];
+                addUnit.value = data[4];
+            }
+
+
+
+        }
+
         
         // Функция обновления таблицы
         function update()
@@ -216,20 +262,23 @@
                     $(this).removeClass('selected');
                     cnt.innerHTML = "-";
                     enableToolbarElement(false);
+                    updateModalContent(null);
                 }
                 else {
                     table.$('tr.selected').removeClass('selected');
                     $(this).addClass('selected');
                     cnt.innerHTML = data[9];
                     enableToolbarElement(true);
+                    updateModalContent(data);
                 }
             } );
 
-
+            // Блокировка scrollbar при открытии модального окна
             document.querySelector('[href="#openModal"]').addEventListener('click', function () {
                 document.body.style.overflow = 'hidden';
                 document.querySelector('#openModal').style.marginLeft = scrollbar;
             });
+            //Разблокировка scrollbar при закрытии модального окна
             document.querySelector('[href="#close"]').addEventListener('click', function () {
                 document.body.style.overflow = 'visible';
                 document.querySelector('#openModal').style.marginLeft = '0px';
