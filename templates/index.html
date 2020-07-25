@@ -118,6 +118,8 @@
         var container = document.getElementById("data");
         var table;
 
+
+
         elemType = document.querySelector('#elemType'),
         unitType = document.querySelector('#unitType');
 
@@ -170,6 +172,35 @@
                 "ajax": "./get_data"
             } );
         }
+        // Функция для блокировки/разблокировки элементов тулбара
+        function enableToolbarElement(status)
+        {
+            var buttonRemove = document.getElementById("buttonRemove");
+            var buttonMinus =  document.getElementById("buttonMinus");
+            if (status)
+            {
+                buttonMinus.classList.remove('buttonMinusDisabled');
+                buttonRemove.classList.remove('buttonRemoveDisabled');
+                buttonRemove.classList.add('buttonRemove');
+                buttonMinus.classList.add("buttonMinus");
+
+                $('#buttonRemove').attr('disabled', false);
+                $('#buttonMinus').attr('disabled', false);
+                $('#changeNum').attr('disabled', false);
+            }
+            else
+            {
+                buttonRemove.classList.remove("buttonRemove");
+                buttonMinus.classList.remove('buttonMinus');
+                buttonMinus.classList.add('buttonMinusDisabled');
+                buttonRemove.classList.add('buttonRemoveDisabled');
+
+
+                $('#buttonRemove').attr('disabled', true);
+                $('#buttonMinus').attr('disabled', true);
+                $('#changeNum').attr('disabled', true);
+            }
+        }
 
         $(document).ready(function () {
 
@@ -206,19 +237,23 @@
 
             //Свой тулбар
             $("div.toolbar").html(createTableToolBar().outerHTML);
+            // Запрет элементов тулбара
+            enableToolbarElement(false);
 
 
             $('#example tbody').on( 'click', 'tr', function () {
-
+                var cnt = document.getElementById("secelctcnt");
                 var data = table.row( this ).data();
                 if ( $(this).hasClass('selected') ) {
                     $(this).removeClass('selected');
-            }
-            else {
+                    cnt.innerHTML = "-";
+                    enableToolbarElement(false);
+                }
+                else {
                     table.$('tr.selected').removeClass('selected');
                     $(this).addClass('selected');
-                    var cnt = document.getElementById("secelctcnt");
                     cnt.innerHTML = data[9];
+                    enableToolbarElement(true);
                 }
             } );
 
@@ -273,6 +308,16 @@
                 
                 return false;
             });
+
+
+            // Обработка нажатия кнопки удаления позциии
+            $('#buttonMinus').on('click', function(){
+
+                
+                return false;
+            });
+
+
 
 
 

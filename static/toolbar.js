@@ -30,8 +30,7 @@ function createTableToolBar()
     toolbar.appendChild(buttonAdd);
 
     // Кнопка удалить
-    var buttonRemove = document.createElement("a");
-    buttonRemove.href = "";
+    var buttonRemove = document.createElement("button");
     buttonRemove.id = "buttonRemove";
     buttonRemove.className = "buttonRemove";
     buttonRemove.innerHTML = "Удалить позицию";
@@ -40,8 +39,9 @@ function createTableToolBar()
 
 
     // Кнопка удалить
-    var buttonMinus = document.createElement("a");
+    var buttonMinus = document.createElement("button");
     buttonMinus.href = "";
+    buttonMinus.id = "buttonMinus";
     buttonMinus.className = "buttonMinus";
     buttonMinus.innerHTML = "Списать";
     toolbar.appendChild(buttonMinus);
@@ -50,6 +50,7 @@ function createTableToolBar()
     // Генерация списка чисел
     span = document.createElement("span");
     select = document.createElement("select");
+    select.id = "changeNum";
 
     toolbar.className = "tableToolbar";
     span.className = "custom-dropdown big";

@@ -114,38 +114,74 @@
 }
 
 /*Стилизация кнопок*/
-a.buttonAdd {
-  font-weight: 700;
+.buttonAdd{
+  display: inline-block;
   color: white;
   text-decoration: none;
-  padding: .8em 1em calc(.8em + 3px);
-  border-radius: 3px;
-  background: rgb(64,199,129);
-  box-shadow: 0 -3px rgb(53,167,110) inset;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #5dda78 #000 #39a04f;
+  border-radius: 6px;
+  background: linear-gradient(#3ec75b, #3ec75b) #3ec75b;
   transition: 0.2s;
-} 
-a.buttonAdd:hover { background: rgb(53, 167, 110); }
-a.buttonAdd:active {
-  background: rgb(33,147,90);
-  box-shadow: 0 3px rgb(33,147,90) inset;
+  font-size: 1.0vw;
+  margin-left: 15px;
 }
 
+.buttonAdd:hover{
+  background: linear-gradient(#39e75f, #39e75f) #39e75f;
+}
+
+
+.buttonAdd:active{
+  background: linear-gradient(#39ac52, #39ad52) #3ab655; 
+}
+
+
 /******************/
-a.buttonRemove {
-  font-weight: 700;
+
+.buttonRemove{
+  display: inline-block;
   color: white;
   text-decoration: none;
-  padding: .8em 1em calc(.8em + 3px);
-  border-radius: 3px;
-  background: rgb(199, 64, 64);
-  box-shadow: 0 -3px rgb(167, 53, 53) inset;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #fd6233 #000 #d70606;
+  border-radius: 6px;
+  background: linear-gradient(#f3310f, #e33516) #e35016;
   transition: 0.2s;
+  font-size: 1.1vw;
   margin-left: 15px;
-} 
-a.buttonRemove:hover { background: rgb(167, 53, 53); }
-a.buttonRemove:active {
-  background: rgb(147, 33, 33);
-  box-shadow: 0 3px rgb(147, 33, 33) inset;
+}
+
+.buttonRemove:hover{
+  background: linear-gradient(#f04c40, #f55f44) #f04d25;
+}
+
+
+.buttonRemove:active{
+  background: linear-gradient(#f51000, #f53100) #f51000; 
+}
+
+
+.buttonRemoveDisabled{
+  display: inline-block;
+  color: rgb(221, 212, 212);;
+  text-decoration: none;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #fd6233 #000 #d70606;
+  border-radius: 6px;
+  background: linear-gradient(#f3310f, #e33516) #e35016;
+  transition: 0.2s;
+  font-size: 1.1vw;
+  margin-left: 15px;
 }
 
 /********************************/
@@ -154,23 +190,46 @@ a.buttonRemove:active {
   text-align: left;
 }
 
-
-
-a.buttonMinus {
-  font-weight: 700;
+.buttonMinus{
+  display: inline-block;
   color: white;
   text-decoration: none;
-  padding: .8em 1em calc(.8em + 3px);
-  border-radius: 3px;
-  background: rgb(199, 64, 64);
-  box-shadow: 0 -3px rgb(167, 53, 53) inset;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #fd6233 #000 #d70606;
+  border-radius: 6px;
+  background: linear-gradient(#f3310f, #e33516) #e35016;
   transition: 0.2s;
-  margin-left: 90px;
-} 
-a.buttonMinus:hover { background: rgb(167, 53, 53); }
-a.buttonMinus:active {
-  background: rgb(147, 33, 33);
-  box-shadow: 0 3px rgb(147, 33, 33) inset;
+  font-size: 1.1vw;
+  margin-left: 30px;
+}
+
+.buttonMinus:hover{
+  background: linear-gradient(#f04c40, #f55f44) #f04d25;
+}
+
+
+.buttonMinus:active{
+  background: linear-gradient(#f51000, #f53100) #f51000; 
+}
+
+/*****************************************/
+.buttonMinusDisabled{
+  display: inline-block;
+  color: rgb(221, 212, 212);
+  text-decoration: none;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #fd6233 #000 #d70606;
+  border-radius: 6px;
+  background: linear-gradient(#f3310f, #e33516) #e35016;
+  transition: 0.2s;
+  font-size: 1.1vw;
+  margin-left: 30px;
 }
 
 
