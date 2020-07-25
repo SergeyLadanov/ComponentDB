@@ -163,7 +163,7 @@
         });
 
         
-
+        // Функция обновления таблицы
         function update()
         {
             table.destroy();
@@ -202,6 +202,7 @@
             }
         }
 
+        // Функция вызываемая при загрузки страницы
         $(document).ready(function () {
 
 
@@ -268,6 +269,17 @@
             });
             var counter = 1;
  
+
+            select_type = document.querySelector('#select-type');
+
+
+            // Отслеживание события select для типов компонентов в таблице
+            select_type.addEventListener('change', function() {
+                return false;
+            });
+
+
+            // Обработка нажатия кнопки добавления позиции модального окна
             $('#addRow').on( 'click', function () {
                 table.row.add( [
                     counter +'.1',

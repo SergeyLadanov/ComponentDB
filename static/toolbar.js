@@ -8,6 +8,8 @@ function createTableToolBar()
     var span = document.createElement("span");
     var select = document.createElement("select");
 
+    select.id = "select-type";
+
     toolbar.className = "tableToolbar";
     span.className = "custom-dropdown big";
     toolbar.appendChild(span);
