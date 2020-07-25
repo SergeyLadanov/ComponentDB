@@ -81,12 +81,37 @@ function createTableToolBar()
     span.innerHTML = "";
     span.id = "secelctcnt";
     toolbar.appendChild(span);
-
-    
-   
-
-
-    
+  
     
     return toolbar;
+}
+
+// Функция для блокировки/разблокировки элементов тулбара
+function enableToolbarElement(status)
+{
+    var buttonRemove = document.getElementById("buttonRemove");
+    var buttonMinus =  document.getElementById("buttonMinus");
+    if (status)
+    {
+        buttonMinus.classList.remove('buttonMinusDisabled');
+        buttonRemove.classList.remove('buttonRemoveDisabled');
+        buttonRemove.classList.add('buttonRemove');
+        buttonMinus.classList.add("buttonMinus");
+
+        $('#buttonRemove').attr('disabled', false);
+        $('#buttonMinus').attr('disabled', false);
+        $('#changeNum').attr('disabled', false);
+    }
+    else
+    {
+        buttonRemove.classList.remove("buttonRemove");
+        buttonMinus.classList.remove('buttonMinus');
+        buttonMinus.classList.add('buttonMinusDisabled');
+        buttonRemove.classList.add('buttonRemoveDisabled');
+
+
+        $('#buttonRemove').attr('disabled', true);
+        $('#buttonMinus').attr('disabled', true);
+        $('#changeNum').attr('disabled', true);
+    }
 }
