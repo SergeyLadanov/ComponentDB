@@ -307,6 +307,29 @@
                 });
             }
 
+            // Обработка нажатия на кнопку добавления позиции
+            $('#buttonAdd').on('click', function(){
+                var submitButton = document.getElementById("addRow");
+                submitButton.innerHTML = "Добавить позицию";
+
+                
+                return true;
+            });
+
+            // Обработка нажатия на кнопку редактирования
+            $('#buttonEdit').on('click', function(){
+                var submitButton = document.getElementById("addRow");
+                submitButton.innerHTML = "Сохранить изменения";
+                var link = document.createElement('a');
+                link.setAttribute('href', '#openModal');
+                link.setAttribute('open', 'open');
+                link.click();
+
+
+                
+                return false;
+            });
+
             // Обработка нажатия кнопки добавления позиции модального окна
             $('#addRow').on( 'click', function () {
                 

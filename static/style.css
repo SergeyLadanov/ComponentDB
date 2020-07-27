@@ -128,6 +128,7 @@
   transition: 0.2s;
   font-size: 1.0vw;
   margin-left: 15px;
+  vertical-align: middle;
 }
 
 .buttonAdd:hover{
@@ -156,6 +157,7 @@
   transition: 0.2s;
   font-size: 1.1vw;
   margin-left: 15px;
+  vertical-align: middle;
 }
 
 .buttonRemove:hover{
@@ -182,12 +184,14 @@
   transition: 0.2s;
   font-size: 1.1vw;
   margin-left: 15px;
+  vertical-align: middle;
 }
 
 /********************************/
 .tableToolbar{
   width: 100%;
   text-align: left;
+  font-size: 1.0vw;
 }
 
 .buttonMinus{
@@ -203,7 +207,8 @@
   background: linear-gradient(#f3310f, #e33516) #e35016;
   transition: 0.2s;
   font-size: 1.1vw;
-  margin-left: 30px;
+  margin-left: 40px;
+  vertical-align: middle;
 }
 
 .buttonMinus:hover{
@@ -229,10 +234,56 @@
   background: linear-gradient(#f3310f, #e33516) #e35016;
   transition: 0.2s;
   font-size: 1.1vw;
-  margin-left: 30px;
+  margin-left: 40px;
+  vertical-align: middle;
+}
+
+/********************************************/
+.buttonEdit{
+  display: inline-block;
+  color: white;
+  text-decoration: none;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #FDBE33 #000 #D77206;
+  border-radius: 6px;
+  background: linear-gradient(#F3AE0F, #E38916) #E38916;
+  transition: 0.2s;
+  font-size: 1.1vw;
+  margin-left: 15px;
+  vertical-align: middle;
+}
+
+.buttonEdit:hover{
+  background: linear-gradient(#f5ae00, #f59500) #f5ae00;
 }
 
 
+.buttonEdit:active{
+  background: linear-gradient(#f59500, #f5ae00) #f59500; 
+}
+
+/*****************************************/
+.buttonEditDisabled{
+  display: inline-block;
+  color: rgb(221, 212, 212);
+  text-decoration: none;
+  padding: .5em 2em;
+  outline: none;
+  border-width: 2px 0;
+  border-style: solid none;
+  border-color: #FDBE33 #000 #D77206;
+  border-radius: 6px;
+  background: linear-gradient(#F3AE0F, #E38916) #E38916;
+  transition: 0.2s;
+  font-size: 1.1vw;
+  margin-left: 15px;
+  vertical-align: middle;
+}
+
+/*****************************/
 .select-cnt{
-  margin-left: 30px;
+  vertical-align: middle;
 }

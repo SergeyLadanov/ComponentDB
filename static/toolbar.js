@@ -26,16 +26,25 @@ function createTableToolBar()
     // Создание кнопок
     var buttonAdd = document.createElement("a");
     buttonAdd.href = "#openModal";
+    buttonAdd.id = "buttonAdd";
     buttonAdd.className = "buttonAdd";
-    buttonAdd.innerHTML = "Добавить позицию";
+    buttonAdd.innerHTML = "Доб.";
 
     toolbar.appendChild(buttonAdd);
+
+
+    var buttonEdit = document.createElement("button");
+    buttonEdit.id = "buttonEdit";
+    buttonEdit.className = "buttonEdit";
+    buttonEdit.innerHTML = "Ред.";
+
+    toolbar.appendChild(buttonEdit);
 
     // Кнопка удалить
     var buttonRemove = document.createElement("button");
     buttonRemove.id = "buttonRemove";
     buttonRemove.className = "buttonRemove";
-    buttonRemove.innerHTML = "Удалить позицию";
+    buttonRemove.innerHTML = "Удал.";
     toolbar.appendChild(buttonRemove);
 
 
@@ -91,16 +100,20 @@ function enableToolbarElement(status)
 {
     var buttonRemove = document.getElementById("buttonRemove");
     var buttonMinus =  document.getElementById("buttonMinus");
+    var buttonEdit = document.getElementById("buttonEdit");
     if (status)
     {
         buttonMinus.classList.remove('buttonMinusDisabled');
         buttonRemove.classList.remove('buttonRemoveDisabled');
         buttonRemove.classList.add('buttonRemove');
         buttonMinus.classList.add("buttonMinus");
+        buttonEdit.classList.add("buttonEdit");
+        buttonEdit.classList.remove("buttonEditDisabled");
 
         $('#buttonRemove').attr('disabled', false);
         $('#buttonMinus').attr('disabled', false);
         $('#changeNum').attr('disabled', false);
+        $('#buttonEdit').attr('disabled', false);
     }
     else
     {
@@ -108,10 +121,13 @@ function enableToolbarElement(status)
         buttonMinus.classList.remove('buttonMinus');
         buttonMinus.classList.add('buttonMinusDisabled');
         buttonRemove.classList.add('buttonRemoveDisabled');
+        buttonEdit.classList.remove("buttonEdit");
+        buttonEdit.classList.add("buttonEditDisabled");
 
 
         $('#buttonRemove').attr('disabled', true);
         $('#buttonMinus').attr('disabled', true);
         $('#changeNum').attr('disabled', true);
+        $('#buttonEdit').attr('disabled', true);
     }
 }
