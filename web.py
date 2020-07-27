@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import socket
+import db_if
 
 
 path = os.path.realpath(os.path.dirname(sys.argv[0]))
@@ -39,8 +40,19 @@ def control():
 
 @app.route('/request_handler', methods=['GET', 'POST'])
 def request_handler():
-    name = request.form.get('data')
-    json_data = json.loads(name)
+    type_data = request.form.get('type')
+    json_data = json.loads(request.form.get('data'))
+
+    if type_data == "Add":
+        db_if.addPosition(json_data)
+    if type_data == "Remove":
+        db_if.removePosition(json_data)
+    if type_data == "Edit":
+        db_if.editPosition(json_data)
+    if type_data == "Sub":
+        db_if.subPosition(json_data)
+
+
 
     print(json_data[0], json_data[1], json_data[2], json_data[3])
     return "OK"

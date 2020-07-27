@@ -52,9 +52,15 @@ def addPosition(data):
 def removePosition(data):
     test = 0
 
+def editPosition(data):
+    test = 0
+
+def subPosition(data):
+    test = 0
 
 
-dbInit()
+
+#dbInit()
 #uncle_bob = Person(name='Ваня', birthday=date(1960, 1, 15))
 #uncle_bob.save() # bob is now stored in the database
 
