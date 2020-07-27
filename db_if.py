@@ -26,7 +26,7 @@ class Component(BaseModel):
     Value = FloatField(null = True, default="-")
     Units = CharField(null = True, default="-")
     Tolerance = CharField(null = True, default="-")
-    PowerVoltage = CharField(null = True, default="-")
+    Description = CharField(null = True, default="-")
     Case = CharField(null = True, default="-")
     Manufacturer = CharField(null = True, default="-")
     Quantity = BigIntegerField(null = False, default=1)
