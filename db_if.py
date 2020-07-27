@@ -1,6 +1,7 @@
 import peewee
 from peewee import *
 from datetime import date, datetime
+import json
 
  
 user = 'root'
@@ -34,11 +35,29 @@ class Component(BaseModel):
     ChangeDate = DateTimeField(default=datetime.now)
 
 
-dbhandle.connect()
+def dbInit():
+    dbhandle.connect()
+    dbhandle.create_tables([Component])
+    dbhandle.close()
 
+def checkExisting(data):
+    test = 0
+
+
+def addPosition(data):
+    test = 0
+
+
+
+def removePosition(data):
+    test = 0
+
+
+
+dbInit()
 #uncle_bob = Person(name='Ваня', birthday=date(1960, 1, 15))
 #uncle_bob.save() # bob is now stored in the database
-dbhandle.create_tables([Component])
+
 
 #uncle_bob = Person(name='Bob', birthday=date(1960, 1, 15))
 #uncle_bob.save() # bob is now stored in the database
@@ -64,4 +83,3 @@ dbhandle.create_tables([Component])
 
 print("Test")
 
-dbhandle.close()

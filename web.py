@@ -35,6 +35,15 @@ def index():
 def control():
     global data
     return data
+
+
+@app.route('/request_handler', methods=['GET', 'POST'])
+def request_handler():
+    name = request.form.get('data')
+    json_data = json.loads(name)
+
+    print(json_data[0], json_data[1], json_data[2], json_data[3])
+    return "OK"
     
 
 

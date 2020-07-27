@@ -118,6 +118,8 @@
         var container = document.getElementById("data");
         var table;
 
+        var parameters = [];
+
 
 
         elemType = document.querySelector('#add-type'),
@@ -270,6 +272,7 @@
                     cnt.innerHTML = data[9];
                     enableToolbarElement(true);
                     updateModalContent(data);
+                    parameters = data;
                 }
             } );
 
@@ -295,17 +298,39 @@
             });
 
 
+            function positionControl(reqType) // Type: Add, Remove, Change
+            {
+
+                $.post("./request_handler", {type: reqType, data: JSON.stringify(parameters)}, function(data){
+                    
+
+                });
+            }
+
             // Обработка нажатия кнопки добавления позиции модального окна
             $('#addRow').on( 'click', function () {
-                table.row.add( [
-                    counter +'.1',
-                    counter +'.2',
-                    counter +'.3',
-                    counter +'.4',
-                    counter +'.5',
-                    counter +'.6'
+                
+                /*********************************************/
+
+
+
+                positionControl("add");
+
+
+
+                /***********************************************/
+
+
+
+//                table.row.add( [
+//                    counter +'.1',
+//                    counter +'.2',
+//                    counter +'.3',
+//                    counter +'.4',
+ //                   counter +'.5',
+//                    counter +'.6'
                     
-                ] ).draw( false );
+//                ] ).draw( false );
 
                 counter++;
 
