@@ -117,6 +117,7 @@
     <script>
         var container = document.getElementById("data");
         var table;
+        var requestType;
 
         var parameters = [];
 
@@ -298,7 +299,7 @@
             });
 
 
-            function positionControl(reqType) // Type: Add, Remove, Change
+            function positionControl(reqType) // Type: Add, Remove, Edit, Sub
             {
 
                 $.post("./request_handler", {type: reqType, data: JSON.stringify(parameters)}, function(data){
@@ -309,6 +310,7 @@
 
             // Обработка нажатия на кнопку добавления позиции
             $('#buttonAdd').on('click', function(){
+                requestType = "Add";
                 var submitButton = document.getElementById("addRow");
                 submitButton.innerHTML = "Добавить позицию";
 
@@ -318,6 +320,7 @@
 
             // Обработка нажатия на кнопку редактирования
             $('#buttonEdit').on('click', function(){
+                requestType = "Edit";
                 var submitButton = document.getElementById("addRow");
                 submitButton.innerHTML = "Сохранить изменения";
                 var link = document.createElement('a');
@@ -370,6 +373,7 @@
 
             // Обработка нажатия кнопки удаления позциии
             $('#buttonRemove').on('click', function(){
+                requestType = "Remove";
                 if (confirm("Удалить позицию?"))
                 {
                     alert("Позциия удалена");
@@ -383,9 +387,9 @@
             });
 
 
-            // Обработка нажатия кнопки удаления позциии
+            // Обработка нажатия кнопки списания позциии
             $('#buttonMinus').on('click', function(){
-
+                requestType = "Sub";
                 
                 return false;
             });
