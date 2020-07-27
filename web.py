@@ -34,6 +34,7 @@ def index():
 
 @app.route('/get_data', methods=['GET', 'POST'])
 def control():
+    type_data = request.form.get('type')
     global data
     return data
 

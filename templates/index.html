@@ -210,16 +210,32 @@
 
 
         }
-
+        var msg = "sdfsdfsdf";
         
         // Функция обновления таблицы
         function update()
         {
-            table.destroy();
+ //           table.destroy();
 
-            table = $('#example').DataTable( {
-                "ajax": "./get_data"
-            } );
+            //table.draw();
+            
+
+//            table.ajax.data( function ( json ) {
+//                json.param3 = "value3";
+ //               json.param4 = "value4";
+//            } );
+
+            msg = "new_msg";
+  //          var test = {
+  //              param1: "sdfsdf",
+  //              param2: "sdfsdfsdf"
+  //          };
+
+            table.ajax.reload();
+
+//            table = $('#example').DataTable( {
+ //               "ajax": "./get_data"
+  //          } );
         }
 
 
@@ -234,7 +250,13 @@
             elemType.dispatchEvent(new Event('change'));
             
             table = $('#example').DataTable( {
-                "ajax": "./get_data",
+                ajax:  {
+                url: "./get_data",
+                data: function(d){
+                        d.param1 = msg;
+                        d.param2 = "value2";
+                    }
+                },
                 scrollY:        '60vh',
                 scrollX: true,
                 "language": {
@@ -395,7 +417,7 @@
             });
 
 
-    //        setInterval('update()',5000);
+            setInterval('update()',5000);
         });
         
     </script>
