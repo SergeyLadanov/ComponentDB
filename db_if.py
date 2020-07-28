@@ -95,7 +95,10 @@ def addPosition(data):
 
 
 def removePosition(data):
-    test = 0
+    dbhandle.connect()
+    query = Component.select().where(Component.ID == data["id"]).get()
+    query.delete_instance()
+    dbhandle.close()
 
 def editPosition(data):
     test = 0

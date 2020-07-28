@@ -347,6 +347,17 @@
 
                 $.post("./request_handler", data, function(data){
                     
+                    if (reqType == "Remove")
+                    {
+                        // Перезагрузка таблицы
+                        table.ajax.reload();
+                    }
+
+                    if (reqType == "Add")
+                    {
+                        // Перезагрузка таблицы
+                        table.ajax.reload();
+                    }
 
                 });
             }
@@ -379,17 +390,7 @@
             // Обработка нажатия кнопки добавления позиции модального окна
             $('#addRow').on( 'click', function () {
                 
-                /*********************************************/
-
-
-
                 positionControl("Add");
-
-
-
-                /***********************************************/
-
-
 
 //                table.row.add( [
 //                    counter +'.1',
@@ -401,7 +402,7 @@
                     
 //                ] ).draw( false );
 
-                counter++;
+
 
 
                 var link = document.createElement('a');
@@ -411,15 +412,17 @@
 
                 document.body.style.overflow = 'visible';
                 document.querySelector('#openModal').style.marginLeft = '0px';
+
+
             } );
 
 
             // Обработка нажатия кнопки удаления позциии
             $('#buttonRemove').on('click', function(){
-                requestType = "Remove";
+                
                 if (confirm("Удалить позицию?"))
                 {
-                    alert("Позциия удалена");
+                    positionControl("Remove");
                 }
                 else
                 {
