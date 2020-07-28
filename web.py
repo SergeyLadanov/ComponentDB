@@ -31,14 +31,14 @@ def index():
     return render_template('index.html')
 
 
-
+# Чтение базы данных
 @app.route('/get_data', methods=['GET', 'POST'])
 def control():
     type_data = request.form.get('type')
     global data
     return data
 
-
+# Обработка запроса на изменение базы данных
 @app.route('/request_handler', methods=['GET', 'POST'])
 def request_handler():
     type_request = request.form.get('reqtype')

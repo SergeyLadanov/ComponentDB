@@ -48,10 +48,23 @@ def getData(filter):
 def checkExisting(data):
     test = 0
 
-
+# Добавление элемента в базу данных
 def addPosition(data):
-    test = 0
-
+    dbhandle.connect()
+    component = Component(
+        Type = data["group"], 
+        ManufacturerPartNumber = data["name"], 
+        Value = data["value"],
+        Units = data["unit"],
+        Tolerance = data["tol"],
+        Description = data["description"],
+        Case = data["case"],
+        Manufacturer = data["manufacturer"],
+        Quantity = data["cnt"],
+        CellNumber = data["cellnum"],
+    )
+    component.save()
+    dbhandle.close()
 
 
 def removePosition(data):
