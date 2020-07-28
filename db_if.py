@@ -43,7 +43,34 @@ def dbInit():
 
 
 def getData(filter):
-    test = 0
+    dbhandle.connect()
+    array = {'data': [ ]}
+    
+    if filter == "":
+        query = Component.select()
+    else:
+        query = Component.select().where(Component.Type == filter)
+
+    for position in query:
+        array["data"].append([
+            position.ID, 
+            position.Type, 
+            position.ManufacturerPartNumber, 
+            position.Value, 
+            position.Units,  
+            position.Tolerance,
+            position.Description,
+            position.Case,
+            position.Manufacturer,
+            position.Quantity,
+            position.CellNumber,
+            position.ChangeDate
+            
+            ])
+
+    dbhandle.close()
+    #print(pet.name, pet.owner.name)
+    return array
 
 def checkExisting(data):
     test = 0
