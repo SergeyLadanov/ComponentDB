@@ -262,6 +262,7 @@
                     cnt.innerHTML = "-";
                     enableToolbarElement(false);
                     updateModalContent(null);
+                    parameters = [];
                 }
                 else {
                     table.$('tr.selected').removeClass('selected');
@@ -311,8 +312,40 @@
 
             function positionControl(reqType) // Type: Add, Remove, Edit, Sub
             {
+                var idValue = 0;
 
-                $.post("./request_handler", {type: reqType, data: JSON.stringify(parameters)}, function(data){
+                var addType = document.getElementById("add-type");
+                var addName = document.getElementById("add-name");
+                var addCnt = document.getElementById("add-count");
+                var addManufacturer = document.getElementById("add-manufacturer");
+                var addCellNum = document.getElementById("add-cellnumber");
+                var addValue = document.getElementById("add-value");
+                var addUnit = document.getElementById("add-unit");
+                var addTol = document.getElementById("add-tolerance");
+                var addPower = document.getElementById("add-power");
+                var addCase = document.getElementById("add-case");
+
+
+                if (parameters != null)
+                {
+                    idValue = parameters[0];
+                }
+                var data  = {
+                    reqtype: reqType,
+                    id: idValue,
+                    group: addType.value,
+                    name: addName.value,
+                    value: addValue.value,
+                    unit: addUnit.value,
+                    tol: addTol.value,
+                    description: addPower.value,
+                    case: addCase.value,
+                    manufacturer: addManufacturer.value,
+                    cnt: addCnt.value,
+                    cellnum: addCellNum.value,
+                };
+
+                $.post("./request_handler", data, function(data){
                     
 
                 });
@@ -350,7 +383,7 @@
 
 
 
-                positionControl("add");
+                positionControl("Add");
 
 
 

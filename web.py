@@ -41,21 +41,36 @@ def control():
 
 @app.route('/request_handler', methods=['GET', 'POST'])
 def request_handler():
-    type_data = request.form.get('type')
-    json_data = json.loads(request.form.get('data'))
+    type_request = request.form.get('reqtype')
 
-    if type_data == "Add":
-        db_if.addPosition(json_data)
-    if type_data == "Remove":
-        db_if.removePosition(json_data)
-    if type_data == "Edit":
-        db_if.editPosition(json_data)
-    if type_data == "Sub":
-        db_if.subPosition(json_data)
+    row_data = {
+        "id": request.form.get('id'), 
+        "group": request.form.get('group'),
+        "name": request.form.get('name'),
+        "value": request.form.get('value'),
+        "unit": request.form.get('unit'),
+        "tol": request.form.get('tol'),
+        "description": request.form.get('description'),
+        "case": request.form.get('case'),
+        "manufacturer": request.form.get('manufacturer'),
+        "cnt": request.form.get('cnt'),
+        "cellnum": request.form.get('cellnum')
+    }
 
 
 
-    print(json_data[0], json_data[1], json_data[2], json_data[3])
+    if type_request == "Add":
+        db_if.addPosition(row_data)
+    if type_request == "Remove":
+        db_if.removePosition(row_data)
+    if type_request == "Edit":
+        db_if.editPosition(row_data)
+    if type_request == "Sub":
+        db_if.subPosition(row_data)
+
+    print(request.form["reqtype"])
+
+ #   print(json_data[0], json_data[1], json_data[2], json_data[3])
     return "OK"
     
 

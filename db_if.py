@@ -35,10 +35,15 @@ class Component(BaseModel):
     ChangeDate = DateTimeField(default=datetime.now)
 
 
+
 def dbInit():
     dbhandle.connect()
     dbhandle.create_tables([Component])
     dbhandle.close()
+
+
+def getData(filter):
+    test = 0
 
 def checkExisting(data):
     test = 0
