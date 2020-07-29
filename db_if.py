@@ -7,7 +7,8 @@ import json
 user = 'root'
 password = '12345678'
 db_name = 'test'
- 
+
+# Обработчик соединения к базе 
 dbhandle = MySQLDatabase(
     db_name, user=user,
     password=password,
@@ -19,7 +20,7 @@ class BaseModel(Model):
     """A base model that will use our Sqlite database."""
     class Meta:
         database = dbhandle
-
+# Структура базы
 class Component(BaseModel):
     ID = BigAutoField()
     Type = CharField(null = False)
@@ -35,13 +36,13 @@ class Component(BaseModel):
     ChangeDate = DateTimeField(default=datetime.now)
 
 
-
+# Функция инициализации базы данных
 def dbInit():
     dbhandle.connect()
     dbhandle.create_tables([Component])
     dbhandle.close()
 
-
+# Функция отправки данных из базы
 def getData(filter):
     dbhandle.connect()
     array = {'data': [ ]}
@@ -69,8 +70,9 @@ def getData(filter):
             ])
 
     dbhandle.close()
-    #print(pet.name, pet.owner.name)
     return array
+
+
 # Проверка существования элемента в базе
 # Необходимо вызвать dbhandle.connect() перед вызовом этой функции
 def checkExisting(data):
@@ -84,8 +86,6 @@ def checkExisting(data):
             Component.Description == data["description"] and
             Component.Case == data["case"] and
             Component.Manufacturer == data["manufacturer"]
-    #       Component.Quantity == data["cnt"]
-    #       Component.CellNumber == data["cellnum"]
             ).get()
     except:
         query = None
