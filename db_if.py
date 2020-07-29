@@ -74,18 +74,21 @@ def getData(filter):
 # Проверка существования элемента в базе
 # Необходимо вызвать dbhandle.connect() перед вызовом этой функции
 def checkExisting(data):
-    query = Component.select().where(
-        Component.Type == data["group"] and
-        Component.ManufacturerPartNumber == data["name"] and
-        Component.Value == data["value"] and
-        Component.Units == data["unit"] and
-        Component.Tolerance == data["tol"] and
-        Component.Description == data["description"] and
-        Component.Case == data["case"] and
-        Component.Manufacturer == data["manufacturer"]
- #       Component.Quantity == data["cnt"]
- #       Component.CellNumber == data["cellnum"]
-        ).get()
+    try:
+        query = Component.select().where(
+            Component.Type == data["group"] and
+            Component.ManufacturerPartNumber == data["name"] and
+            Component.Value == data["value"] and
+            Component.Units == data["unit"] and
+            Component.Tolerance == data["tol"] and
+            Component.Description == data["description"] and
+            Component.Case == data["case"] and
+            Component.Manufacturer == data["manufacturer"]
+    #       Component.Quantity == data["cnt"]
+    #       Component.CellNumber == data["cellnum"]
+            ).get()
+    except:
+        query = None
     return query
 
 
@@ -109,7 +112,7 @@ def addPosition(data):
         component.save()
     else:
         result.Quantity = result.Quantity + int(data["cnt"])
-        #result.ChangeDate = datetime.now
+        result.ChangeDate = datetime.now()
         result.save()
     dbhandle.close()
 
