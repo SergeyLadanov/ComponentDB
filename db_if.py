@@ -71,26 +71,46 @@ def getData(filter):
     dbhandle.close()
     #print(pet.name, pet.owner.name)
     return array
-
+# Проверка существования элемента в базе
+# Необходимо вызвать dbhandle.connect() перед вызовом этой функции
 def checkExisting(data):
-    test = 0
+    query = Component.select().where(
+        Component.Type == data["group"] and
+        Component.ManufacturerPartNumber == data["name"] and
+        Component.Value == data["value"] and
+        Component.Units == data["unit"] and
+        Component.Tolerance == data["tol"] and
+        Component.Description == data["description"] and
+        Component.Case == data["case"] and
+        Component.Manufacturer == data["manufacturer"]
+ #       Component.Quantity == data["cnt"]
+ #       Component.CellNumber == data["cellnum"]
+        ).get()
+    return query
+
 
 # Добавление элемента в базу данных
 def addPosition(data):
     dbhandle.connect()
-    component = Component(
-        Type = data["group"], 
-        ManufacturerPartNumber = data["name"], 
-        Value = data["value"],
-        Units = data["unit"],
-        Tolerance = data["tol"],
-        Description = data["description"],
-        Case = data["case"],
-        Manufacturer = data["manufacturer"],
-        Quantity = data["cnt"],
-        CellNumber = data["cellnum"],
-    )
-    component.save()
+    result = checkExisting(data)
+    if result  is None:
+        component = Component(
+            Type = data["group"], 
+            ManufacturerPartNumber = data["name"], 
+            Value = data["value"],
+            Units = data["unit"],
+            Tolerance = data["tol"],
+            Description = data["description"],
+            Case = data["case"],
+            Manufacturer = data["manufacturer"],
+            Quantity = data["cnt"],
+            CellNumber = data["cellnum"],
+        )
+        component.save()
+    else:
+        result.Quantity = result.Quantity + int(data["cnt"])
+        #result.ChangeDate = datetime.now
+        result.save()
     dbhandle.close()
 
 
