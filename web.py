@@ -33,7 +33,7 @@ def control():
 @app.route('/request_handler', methods=['GET', 'POST'])
 def request_handler():
     type_request = request.form.get('reqtype')
-
+    repply = "OK"
     row_data = {
         "id": request.form.get('id'), 
         "group": request.form.get('group'),
@@ -48,21 +48,14 @@ def request_handler():
         "cellnum": request.form.get('cellnum')
     }
 
-
-
     if type_request == "Add":
-        db_if.addPosition(row_data)
+        repply = db_if.addPosition(row_data)
     if type_request == "Remove":
-        db_if.removePosition(row_data)
+        repply = db_if.removePosition(row_data)
     if type_request == "Edit":
-        db_if.editPosition(row_data)
-    if type_request == "Sub":
-        db_if.subPosition(row_data)
+        repply = db_if.editPosition(row_data)
 
-    print(request.form["reqtype"])
-
- #   print(json_data[0], json_data[1], json_data[2], json_data[3])
-    return "OK"
+    return repply
     
 
 

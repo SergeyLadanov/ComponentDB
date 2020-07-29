@@ -65,7 +65,7 @@ def getData(filter):
             position.Manufacturer,
             position.Quantity,
             position.CellNumber,
-            position.ChangeDate
+            str(position.ChangeDate).split('.')[0]
             
             ])
 
@@ -94,6 +94,7 @@ def checkExisting(data):
 
 # Добавление элемента в базу данных
 def addPosition(data):
+    status = "True"
     dbhandle.connect()
     result = checkExisting(data)
     if result  is None:
@@ -115,51 +116,50 @@ def addPosition(data):
         result.ChangeDate = datetime.now()
         result.save()
     dbhandle.close()
+    return status
 
 
+# Функция удаления позиции
 def removePosition(data):
+    status = "True"
     dbhandle.connect()
     try:
         query = Component.select().where(Component.ID == data["id"]).get()
         query.delete_instance()
     except:
-        print("Component was not found!")
+        status = "False"
     dbhandle.close()
+    return status
 
+
+# Функция редактирования позиции
 def editPosition(data):
-    test = 0
+    status = "True"
+    dbhandle.connect()
+    try:
+        query = Component.select().where(Component.ID == data["id"]).get()
+        query.Type = data["group"] 
+        query.ManufacturerPartNumber = data["name"] 
+        query.Value = data["value"] 
+        query.Units = data["unit"]
+        query.Tolerance = data["tol"]
+        query.Description = data["description"]
+        query.Case = data["case"]
+        query.Manufacturer = data["manufacturer"]
+        query.Quantity = data["cnt"]
+        query.CellNumber = data["cellnum"]
+        query.ChangeDate = datetime.now()
+        status = str(query.ChangeDate).split('.')[0]
+        query.save()
+    except:
+        status = "False"
 
-def subPosition(data):
-    test = 0
+    dbhandle.close()
+    return status
 
 
 
+# Инициализация БД
 #dbInit()
-#uncle_bob = Person(name='Ваня', birthday=date(1960, 1, 15))
-#uncle_bob.save() # bob is now stored in the database
 
-
-#uncle_bob = Person(name='Bob', birthday=date(1960, 1, 15))
-#uncle_bob.save() # bob is now stored in the database
-#grandma = Person.create(name='Grandma', birthday=date(1935, 3, 1))
-#herb = Person.create(name='Herb', birthday=date(1950, 5, 5))
-
-#grandma.name = 'Grandma L.'
-#grandma.save()  # Update grandma's name in the database.
-
-#bob_kitty = Pet.create(owner=uncle_bob, name='Kitty', animal_type='cat')
-#herb_fido = Pet.create(owner=herb, name='Fido', animal_type='dog')
-#herb_mittens = Pet.create(owner=herb, name='Mittens', animal_type='cat')
-#herb_mittens_jr = Pet.create(owner=herb, name='Mittens Jr', animal_type='cat')
-
-#herb_mittens.delete_instance() # he had a great life
-
-#herb_fido.owner = uncle_bob
-#herb_fido.save()
-#query = Pet.select().where(Pet.animal_type == 'cat', Pet.name == 'Kitty')
-#for pet in query:
-#    print(pet.name, pet.owner.name)
-
-
-print("Test")
 

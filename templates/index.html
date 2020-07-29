@@ -266,8 +266,6 @@
                     enableToolbarElement(false);
                     updateModalContent(null);
                     parameters = [];
-                    //data[9] = data[9]+1;
-                    //table.row( this ).invalidate();
                 }
                 else {
                     table.$('tr.selected').removeClass('selected');
@@ -291,7 +289,7 @@
             });
             var counter = 1;
  
-
+            // Получение объекта выбора типа компонента
             select_type = document.querySelector('#select-type');
 
 
@@ -314,8 +312,9 @@
                 return false;
             });
 
-
-            function positionControl(reqType) // Type: Add, Remove, Edit, Sub
+            // Функция изменения позиции со стороны БД сервера
+            // Типы команд: Add, Remove, Edit, Sub
+            function positionControl(reqType) 
             {
                 var idValue = 0;
                 var subNum = document.getElementById("changeNum");
@@ -335,6 +334,23 @@
                 {
                     idValue = parameters[0];
                 }
+
+                //  Организация изменения
+                if (reqType == "Edit")
+                {
+                    // Заполнение выделенной строки новыми данными
+                    parameters[1] = addType.value;
+                    parameters[2] = addName.value;
+                    parameters[3] = addValue.value;
+                    parameters[4] = addUnit.value;
+                    parameters[5] = addTol.value;
+                    parameters[6] = addPower.value;
+                    parameters[7] = addCase.value;
+                    parameters[8] = addManufacturer.value;
+                    parameters[9] = addCnt.value;
+                    parameters[10] = addCellNum.value;
+                }
+
                 // Организация вычитания
                 if (reqType == "Sub")
                 {
@@ -347,7 +363,7 @@
                     parameters[9] = String(newCnt);
                     addCnt.value = parameters[9];
 
-                    reqtype = "Edit";
+                    reqType = "Edit";
                 }
                 // Подготовка данных для отправки серверу
                 var data  = {
@@ -372,18 +388,24 @@
                     {
                         // Перезагрузка таблицы
                         table.ajax.reload();
+                        // Сброс значения полей модального окна
+                        updateModalContent(null);
                     }
                     else
                     {
-                        var cnt = document.getElementById("secelctcnt");
-                        cnt.innerHTML = parameters[9];
-                        // Обновление данных в строке
-                        selectedRow.invalidate();
+                        if (data != "False")
+                        {
+                            var cnt = document.getElementById("secelctcnt");
+                            cnt.innerHTML = parameters[9];
+                            // Запись даты изменения, принятой с сервера, в строку данных
+                            parameters[11] = data;
+                            // Обновление данных в строке
+                            selectedRow.invalidate();
+                        }
                     }
 
                 });
-                // Сброс значения полей модального окна
-                updateModalContent(null);
+
 
             }
 
