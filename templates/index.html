@@ -387,23 +387,23 @@
                 return false;
             });
 
-            // Обработка нажатия кнопки добавления позиции модального окна
+            // Обработка нажатия кнопки действия модального окна
             $('#addRow').on( 'click', function () {
                 
-                positionControl("Add");
+                if (requestType == "Add")
+                {
+                    // Добавление новой позиции
+                    positionControl("Add");     
+                }
 
-//                table.row.add( [
-//                    counter +'.1',
-//                    counter +'.2',
-//                    counter +'.3',
-//                    counter +'.4',
- //                   counter +'.5',
-//                    counter +'.6'
-                    
-//                ] ).draw( false );
+                if (requestType == "Edit")
+                {
+                    //Редактирование существующей позиции
+                    positionControl("Edit");
+                }
 
 
-
+                updateModalContent(null);
 
                 var link = document.createElement('a');
                 link.setAttribute('href', '#close');

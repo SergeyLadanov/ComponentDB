@@ -15,7 +15,7 @@ dbhandle = MySQLDatabase(
     host='localhost'
 )
 
-
+# Базовая модель
 class BaseModel(Model):
     """A base model that will use our Sqlite database."""
     class Meta:
