@@ -116,22 +116,24 @@
 
     <script>
         var container = document.getElementById("data");
+        // Переменная для хранения выбранного типа элементов
         var filterMsg = "";
+        // Объект таблицы
         var table;
+        // Переменная для хранения типа запроса
         var requestType;
-
+        // Объект выделенной строки
+        var selectedRow;
+        // Массив значений выделенной строки
         var parameters = [];
 
 
-
+        // Организация автоматической подстановки единиц измерения в модальном окне
         elemType = document.querySelector('#add-type'),
         unitType = document.querySelector('#add-unit');
 
-        var resUnit = ["Ом", "кОм", "МОм"];
-        var condUnit = ["пФ", "мкФ"];
-        var indUnit = ["мкГн", "Гн"];
-
         var types=[];
+        // Массив единиц измерения 
         var units = [["пФ", "мкФ"], ["Ом", "кОм", "МОм"],  ["мкГн", "Гн"]];
 
         // Инициализация select для типов компонентов в модальном окне
@@ -253,16 +255,19 @@
             enableToolbarElement(false);
 
 
-
+            // Обработка нажатия на строку таблицы
             $('#example tbody').on( 'click', 'tr', function () {
                 var cnt = document.getElementById("secelctcnt");
                 var data = table.row( this ).data();
+                selectedRow = table.row( this );
                 if ( $(this).hasClass('selected') ) {
                     $(this).removeClass('selected');
                     cnt.innerHTML = "-";
                     enableToolbarElement(false);
                     updateModalContent(null);
                     parameters = [];
+                    //data[9] = data[9]+1;
+                    //table.row( this ).invalidate();
                 }
                 else {
                     table.$('tr.selected').removeClass('selected');
@@ -313,7 +318,7 @@
             function positionControl(reqType) // Type: Add, Remove, Edit, Sub
             {
                 var idValue = 0;
-
+                var subNum = document.getElementById("changeNum");
                 var addType = document.getElementById("add-type");
                 var addName = document.getElementById("add-name");
                 var addCnt = document.getElementById("add-count");
@@ -330,6 +335,21 @@
                 {
                     idValue = parameters[0];
                 }
+                // Организация вычитания
+                if (reqType == "Sub")
+                {
+                    var currentCnt = Number(parameters[9]);
+                    var newCnt = currentCnt - Number(subNum.value);
+                    if (newCnt < 0)
+                    {
+                        newCnt = 0;
+                    }
+                    parameters[9] = String(newCnt);
+                    addCnt.value = parameters[9];
+
+                    reqtype = "Edit";
+                }
+                // Подготовка данных для отправки серверу
                 var data  = {
                     reqtype: reqType,
                     id: idValue,
@@ -345,21 +365,26 @@
                     cellnum: addCellNum.value,
                 };
 
+                // Отправка данных серверу, обработка ответа
                 $.post("./request_handler", data, function(data){
                     
-                    if (reqType == "Remove")
+                    if (reqType == "Remove" || reqType == "Add")
                     {
                         // Перезагрузка таблицы
                         table.ajax.reload();
                     }
-
-                    if (reqType == "Add")
+                    else
                     {
-                        // Перезагрузка таблицы
-                        table.ajax.reload();
+                        var cnt = document.getElementById("secelctcnt");
+                        cnt.innerHTML = parameters[9];
+                        // Обновление данных в строке
+                        selectedRow.invalidate();
                     }
 
                 });
+                // Сброс значения полей модального окна
+                updateModalContent(null);
+
             }
 
             // Обработка нажатия на кнопку добавления позиции
@@ -367,8 +392,6 @@
                 requestType = "Add";
                 var submitButton = document.getElementById("addRow");
                 submitButton.innerHTML = "Добавить позицию";
-
-                
                 return true;
             });
 
@@ -381,9 +404,6 @@
                 link.setAttribute('href', '#openModal');
                 link.setAttribute('open', 'open');
                 link.click();
-
-
-                
                 return false;
             });
 
@@ -401,9 +421,6 @@
                     //Редактирование существующей позиции
                     positionControl("Edit");
                 }
-
-
-                updateModalContent(null);
 
                 var link = document.createElement('a');
                 link.setAttribute('href', '#close');
@@ -436,12 +453,11 @@
             // Обработка нажатия кнопки списания позциии
             $('#buttonMinus').on('click', function(){
                 requestType = "Sub";
-                
+                //Списание существующей позиции
+                positionControl(requestType);
                 return false;
             });
 
-
-  //          setInterval('update()',5000);
         });
         
     </script>

@@ -119,8 +119,11 @@ def addPosition(data):
 
 def removePosition(data):
     dbhandle.connect()
-    query = Component.select().where(Component.ID == data["id"]).get()
-    query.delete_instance()
+    try:
+        query = Component.select().where(Component.ID == data["id"]).get()
+        query.delete_instance()
+    except:
+        print("Component was not found!")
     dbhandle.close()
 
 def editPosition(data):
