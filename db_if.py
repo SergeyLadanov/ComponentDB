@@ -78,14 +78,14 @@ def getData(filter):
 def checkExisting(data):
     try:
         query = Component.select().where(
-            Component.Type == data["group"] and
-            Component.ManufacturerPartNumber == data["name"] and
-            Component.Value == data["value"] and
-            Component.Units == data["unit"] and
-            Component.Tolerance == data["tol"] and
-            Component.Description == data["description"] and
-            Component.Case == data["case"] and
-            Component.Manufacturer == data["manufacturer"]
+            (Component.Type == data["group"]) &
+            (Component.ManufacturerPartNumber == data["name"]) &
+            (Component.Value == data["value"]) &
+            (Component.Units == data["unit"]) &
+            (Component.Tolerance == data["tol"]) &
+            (Component.Description == data["description"]) &
+            (Component.Case == data["case"]) &
+            (Component.Manufacturer == data["manufacturer"])
             ).get()
     except:
         query = None
