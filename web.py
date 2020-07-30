@@ -12,6 +12,7 @@ path = os.path.realpath(os.path.dirname(sys.argv[0]))
 try:
     from config import HTTP_HOST
     from config import HTTP_PORT
+    from config import ACCOUNTS
 except ModuleNotFoundError:
     print("This is the first start of application")
     config_content =  '''#----Настройки WEB сервера----#
@@ -36,18 +37,42 @@ DB_PSWD = ""'''
     f.close()
     print("Config file was created, please config application and restart it")
     exit(0)
+
+# Импорт модуля для работы с БД
 import db_if
 
+# Организация базовой авторизации
+def checkAuth(username, password):
+    for item in ACCOUNTS:
+        record = item.split(':')
+        usr = record[0]
+        pswd = record[1]
+        if usr == username and pswd == password:
+            return True
+    return False
+
+# Декоратор авторизации
+def auth_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if auth and checkAuth(auth.username, auth.password):
+            return f(*args, **kwargs)
+        return make_response('Authorization failed!', 401, {'WWW-Authenticate' : 'Basic realm="Login Required"'})
+    return decorated
 #------------------------------
 app = Flask(__name__)
 
+# Корневой каталог
 @app.route("/")
+@auth_required
 def index():
     return render_template('index.html')
 
 
 # Чтение базы данных
 @app.route('/get_data', methods=['GET', 'POST'])
+@auth_required
 def control():
     type_data = request.args.get('filter')
     data = db_if.getData(type_data)
@@ -55,6 +80,7 @@ def control():
 
 # Обработка запроса на изменение базы данных
 @app.route('/request_handler', methods=['GET', 'POST'])
+@auth_required
 def request_handler():
     type_request = request.form.get('reqtype')
     repply = "OK"
