@@ -142,7 +142,7 @@
         // Объект выделенной строки
         var selectedRow;
         // Массив значений выделенной строки
-        var parameters = [];
+        var parameters = null;
 
 
         // Организация автоматической подстановки единиц измерения в модальном окне
@@ -306,7 +306,7 @@
                     cnt.innerHTML = "-";
                     enableToolbarElement(false);
                     updateModalContent(null);
-                    parameters = [];
+                    parameters = null;
                 }
                 else {
                     table.$('tr.selected').removeClass('selected');
@@ -436,6 +436,10 @@
                         table.ajax.reload();
                         // Сброс значения полей модального окна
                         updateModalContent(null);
+
+                        parameters = null;
+
+                        enableToolbarElement(false);
                     }
                     else
                     {
@@ -473,6 +477,10 @@
                 if (parameters != null)
                 {
                     updateModalContent(parameters);
+                }
+                else
+                {
+                    updateModalContent(null);
                 }
                 var modaltitle = document.getElementById("modal-title");
                 modaltitle.innerHTML = "Добавление позиции";
