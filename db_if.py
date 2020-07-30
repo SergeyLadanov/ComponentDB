@@ -2,13 +2,16 @@ import peewee
 from peewee import *
 from datetime import date, datetime
 import json
-import config
+from config import DB_USER
+from config import DB_PSWD
+from config import DB_HOST
+from config import DB_NAME
 
 # Обработчик соединения к базе 
 dbhandle = MySQLDatabase(
-    config.DB_NAME, user=config.DB_USER,
-    password=config.DB_PSWD,
-    host=config.DB_HOST
+    DB_NAME, user=DB_USER,
+    password=DB_PSWD,
+    host=DB_HOST
 )
 
 # Базовая модель
