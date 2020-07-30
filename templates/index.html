@@ -441,7 +441,17 @@
                             // Запись даты изменения, принятой с сервера, в строку данных
                             parameters[11] = data;
                             // Обновление данных в строке
-                            selectedRow.invalidate();
+                            if (data == "Match")
+                            {
+                                // Сообщение
+                                alert("Данный компонент уже есть в базе. Строки были объединены");
+                                // Перезагрузка таблицы
+                                table.ajax.reload();
+                            }
+                            else
+                            {
+                                selectedRow.invalidate();
+                            }
 
 
                         }
@@ -455,6 +465,8 @@
             // Обработка нажатия на кнопку добавления позиции
             $('#buttonAdd').on('click', function(){
                 requestType = "Add";
+                var addCnt = document.getElementById("add-count");
+                addCnt.value = "1";
                 var submitButton = document.getElementById("addRow");
                 submitButton.innerHTML = "Добавить позицию";
                 return true;
@@ -463,6 +475,8 @@
             // Обработка нажатия на кнопку редактирования
             $('#buttonEdit').on('click', function(){
                 requestType = "Edit";
+                var addCnt = document.getElementById("add-count");
+                addCnt.value = parameters[9];
                 var submitButton = document.getElementById("addRow");
                 submitButton.innerHTML = "Сохранить изменения";
                 var link = document.createElement('a');

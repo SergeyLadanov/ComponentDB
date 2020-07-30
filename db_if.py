@@ -135,8 +135,19 @@ def removePosition(data):
 def editPosition(data):
     status = "True"
     dbhandle.connect()
+    result = checkExisting(data)
+    date_time = datetime.now()
+
     try:
-        query = Component.select().where(Component.ID == data["id"]).get()
+        if str(result.ID) == data["id"]:
+            query = Component.select().where(Component.ID == data["id"]).get()
+            status = str(date_time).split('.')[0]
+        else:
+            Component.select().where(Component.ID == data["id"]).get().delete_instance()
+            data["cnt"] = str(int(result.Quantity) + int(data["cnt"]))
+            query = result
+            status = "Match"
+
         query.Type = data["group"] 
         query.ManufacturerPartNumber = data["name"] 
         query.Value = data["value"] 
@@ -147,8 +158,7 @@ def editPosition(data):
         query.Manufacturer = data["manufacturer"]
         query.Quantity = data["cnt"]
         query.CellNumber = data["cellnum"]
-        query.ChangeDate = datetime.now()
-        status = str(query.ChangeDate).split('.')[0]
+        query.ChangeDate = date_time
         query.save()
     except:
         status = "False"
