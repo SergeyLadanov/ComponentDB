@@ -109,6 +109,22 @@
                             <th>Дата изменения</th>
                         </tr>
                     </thead>
+                    <tfoot>
+                        <tr>
+                            <th>ID</th>
+                            <th>Классификация</th>
+                            <th>Наименование производителя</th>
+                            <th>Значение</th>
+                            <th>Единицы измерения</th>
+                            <th>Точность</th>
+                            <th>Описание</th>
+                            <th>Корпус</th>
+                            <th>Производитель</th>
+                            <th>Количество</th>
+                            <th>Номер ячейки</th>
+                            <th>Дата изменения</th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
 
@@ -225,7 +241,14 @@
             initAddSelect();
             // Вызов события изменения select для заполнения данными
             elemType.dispatchEvent(new Event('change'));
+
+            // Создание input для полей поиска
+            $('#example tfoot th').each( function () {
+                var title = $(this).text();
+                $(this).html( '<input type="text" placeholder="Поиск '+title+'" />' );
+            } );
             
+            // Создание таблицы
             table = $('#example').DataTable( {
                 ajax:  {
                 url: "./get_data",
@@ -245,8 +268,25 @@
                 },
                 "pagingType": "full_numbers",
                 "lengthMenu": [[50], [50]],
-                "dom": '<"toolbar">frtip' // Включение кастомного тулбара
-            } );
+                "dom": '<"toolbar">frtip', // Включение кастомного тулбара
+
+                // Создание поиска в каждой колонке
+                initComplete: function () {
+                // Применение поиска по каждой колонке
+                    this.api().columns().every( function () {
+                        var that = this;
+        
+                        $( 'input', this.footer() ).on( 'keyup change clear', function () {
+                            if ( that.search() !== this.value ) {
+                                that
+                                    .search( this.value )
+                                    .draw();
+                            }
+                        } );
+                    } );
+                }
+
+                } );
 
 
 
@@ -402,6 +442,8 @@
                             parameters[11] = data;
                             // Обновление данных в строке
                             selectedRow.invalidate();
+
+
                         }
                     }
 
