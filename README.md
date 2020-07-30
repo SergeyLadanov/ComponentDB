@@ -56,3 +56,31 @@ DB_NAME = "db_name"
 DB_PSWD = "password"
 
 ```
+
+# Запуск приложения
+Команда:
+```
+python run.py
+```
+## Создание сервися linux
+
+В папке /etc/sytemd/system/ создается файл с расширением .service
+Например components.service:
+```
+[Unit]
+Description=components # Service name
+
+[Service]
+ExecStart=/home/orangepi/ComponentDB/run.py # Path to run.py file
+
+[Install]
+WantedBy=multi-user.target
+```
+Далее управление сервисом осуществляется командой systemctl.
+Примеры:
+```
+systemctl enable components # Разрешить запуск сервиса при старте системы
+systemctl disable components # Запретить запуск сервиса при старте системы
+systemctl start components # Запуск сервиса
+systemctl stop components # Остановка сервиса
+```
