@@ -20,7 +20,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h3 class="modal-title">Добавление позиции</h3>
+                                <h3 class="modal-title" id="modal-title">Добавление позиции</h3>
                                 <a href="#close" title="Close" class="close">×</a>
                             </div>
                             <div class="modal-body">
@@ -474,6 +474,8 @@
                 {
                     updateModalContent(parameters);
                 }
+                var modaltitle = document.getElementById("modal-title");
+                modaltitle.innerHTML = "Добавление позиции";
                 var addCnt = document.getElementById("add-count");
                 addCnt.value = "1";
                 var submitButton = document.getElementById("addRow");
@@ -488,6 +490,8 @@
                 var addCnt = document.getElementById("add-count");
                 addCnt.value = parameters[9];
                 var submitButton = document.getElementById("addRow");
+                var modaltitle = document.getElementById("modal-title");
+                modaltitle.innerHTML = "Редактирование позиции";
                 submitButton.innerHTML = "Сохранить изменения";
                 var link = document.createElement('a');
                 link.setAttribute('href', '#openModal');
