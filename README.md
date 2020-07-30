@@ -1,6 +1,16 @@
 # Пример работы с MySQL на Python
 
-## Описание файлов
-* Components.mwb - Модель базы данных для программы MySQL Workbench;
-* Components.sql - Скрипт для создания базы по модели;
-* test.py - Скрипт для работы с базой данных на языке Python;
+## Установка необходимых компоненты
+Python (https://www.python.org)
+Установка модулей для работы с базой данных mySQL
+```
+pip install peewee
+pip install cryptography
+```
+
+Установка модулей для WEB приложения
+
+```
+pip install flask
+pip install cherrypy
+```
