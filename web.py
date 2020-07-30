@@ -13,23 +13,23 @@ try:
     from config import HTTP_HOST
     from config import HTTP_PORT
     from config import ACCOUNTS
-except ModuleNotFoundError:
+except:
     print("This is the first start of application")
-    config_content =  '''#----Настройки WEB сервера----#
-# Хост WEB сервера
+    config_content =  '''#----WEB server settings----#
+# WEB server host
 HTTP_HOST = "localhost"
-# Порт WEB сервера
+# WEB server port
 HTTP_PORT = 5000
-# Учетные записи для доступа к серверу
+# Userts and passwords
 ACCOUNTS = ["user1:pswd1", "user2:pswd2"]
-#----Настройки подключения к базе данных----#
-# Хост для подключения к БД
+#----Database settings----#
+# Host for mySQL database
 DB_HOST = "localhost"
-# Имя пользователя БД
+# User of database
 DB_USER = ""
-# Имя БД
+# Name of database
 DB_NAME = ""
-# Пароль БД
+# Password for database
 DB_PSWD = ""'''
 
     f = open(path+'/config.py', 'w')

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 try:
     from cheroot.wsgi import Server as WSGIServer, PathInfoDispatcher
 except ImportError:
