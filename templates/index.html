@@ -313,7 +313,7 @@
                     $(this).addClass('selected');
                     cnt.innerHTML = data[9];
                     enableToolbarElement(true);
-                    updateModalContent(data);
+                    //updateModalContent(data);
                     parameters = data;
                 }
             } );
@@ -470,6 +470,10 @@
             // Обработка нажатия на кнопку добавления позиции
             $('#buttonAdd').on('click', function(){
                 requestType = "Add";
+                if (parameters != null)
+                {
+                    updateModalContent(parameters);
+                }
                 var addCnt = document.getElementById("add-count");
                 addCnt.value = "1";
                 var submitButton = document.getElementById("addRow");
@@ -480,6 +484,7 @@
             // Обработка нажатия на кнопку редактирования
             $('#buttonEdit').on('click', function(){
                 requestType = "Edit";
+                updateModalContent(parameters);
                 var addCnt = document.getElementById("add-count");
                 addCnt.value = parameters[9];
                 var submitButton = document.getElementById("addRow");

@@ -138,9 +138,19 @@ def editPosition(data):
     dbhandle.connect()
     result = checkExisting(data)
     date_time = datetime.now()
+    # Флаг изменения текущей позиции
+    changeCurrent = True
 
     try:
-        if str(result.ID) == data["id"]:
+        if result is None:
+            changeCurrent = True
+        else:
+            if str(result.ID) == data["id"]:
+               changeCurrent = True 
+            else:
+                changeCurrent = False
+
+        if changeCurrent:
             query = Component.select().where(Component.ID == data["id"]).get()
             status = str(date_time).split('.')[0]
         else:
