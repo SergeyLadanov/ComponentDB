@@ -157,8 +157,16 @@ def editPosition(data):
     return status
 
 
-
-# Инициализация БД
-#dbInit()
-
+# Проверка структуры БД
+try:
+    # Попытка считать данные
+    dbhandle.connect()
+    query = Component.select()
+    for position in query:
+        break
+    dbhandle.close()
+except:
+    dbhandle.close()
+    # Инициализация БД
+    dbInit()
 
