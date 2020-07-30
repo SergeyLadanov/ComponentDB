@@ -114,6 +114,7 @@ def addPosition(data):
         result.Quantity = result.Quantity + int(data["cnt"])
         result.ChangeDate = datetime.now()
         result.save()
+        status = "Match"
     dbhandle.close()
     return status
 
