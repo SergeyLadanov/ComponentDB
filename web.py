@@ -7,11 +7,34 @@ import sys
 import socket
 import db_if
 
-
+# Текущий путь приложения
 path = os.path.realpath(os.path.dirname(sys.argv[0]))
+try:
+    import config
+except ModuleNotFoundError:
+    print("This is the first start of application")
+    config_content =  '''#----Настройки WEB сервера----#
+# Хост WEB сервера
+HTTP_HOST = "localhost"
+# Порт WEB сервера
+HTTP_PORT = 5000
+# Учетные записи для доступа к серверу
+ACCOUNTS = ["user1:pswd1", "user2:pswd2"]
+#----Настройки подключения к базе данных----#
+# Хост для подключения к БД
+DB_HOST = "localhost"
+# Имя пользователя БД
+DB_USER = ""
+# Имя БД
+DB_NAME = ""
+# Пароль БД
+DB_PSWD = ""'''
 
-
-#json_string = json.dumps(data)
+    f = open('config.py', 'w')
+    f.write(config_content)
+    f.close()
+    print("Config file was created, please config application and restart it")
+    exit(0)
 
 
 #------------------------------
