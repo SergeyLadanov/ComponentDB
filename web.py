@@ -30,7 +30,12 @@ DB_USER = ""
 # Name of database
 DB_NAME = ""
 # Password for database
-DB_PSWD = ""'''
+DB_PSWD = ""
+#-----Backup settings-----#
+# Using relative path
+RELATIVE_PATH = True
+# Path for saving dump
+DUMP_PATH = "/dump/dump.sql"'''
 
     f = open(path+'/config.py', 'w')
     f.write(config_content)
