@@ -1,6 +1,9 @@
-# Пример работы с MySQL на Python
+# ComponentDB
+WEB приложение для учета электронных компонентов
 
-## Установка необходимых компоненты
+![Внешний вид](preview.png)
+
+## Установка необходимых компонентов
 
 ### Установка python
 Python (https://www.python.org)
@@ -57,11 +60,12 @@ DB_PSWD = "password"
 
 ```
 
-# Запуск приложения
+## Запуск приложения
 Команда:
 ```
 python run.py
 ```
+После первого запуска приложение создаст файл config.py и закроется. После задания настроек необходимо еще раз запустить приложение.
 ## Создание сервися linux
 
 В папке /etc/sytemd/system/ создается файл с расширением .service
@@ -84,3 +88,19 @@ systemctl disable components # Запретить запуск сервиса п
 systemctl start components # Запуск сервиса
 systemctl stop components # Остановка сервиса
 ```
+## Создание бэкапа БД
+Для создания резервной копии БД необходимо выполнить скрипт dump.py:
+```
+python dump.py
+```
+Путь для сохранения файла резервной копии указывается в файле config.py:
+
+```
+#-----Backup settings-----#
+# Using relative path
+RELATIVE_PATH = True
+# Path for saving dump
+DUMP_PATH = "/dump/dump.sql"
+```
+
+Флаг RELATIVE_PATH указывает использовать каталог относительно папки проекта (True) или абсолютный путь (False).
