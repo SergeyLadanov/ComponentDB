@@ -6,7 +6,7 @@ WEB приложение для учета электронных компоне
 ## Установка необходимых компонентов
 
 ### Установка python
-Python (https://www.python.org)
+https://www.python.org
 ### Установка модулей для работы с базой данных mySQL
 ```
 pip install peewee
