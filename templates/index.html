@@ -313,7 +313,6 @@
                     $(this).addClass('selected');
                     cnt.innerHTML = data[9];
                     enableToolbarElement(true);
-                    //updateModalContent(data);
                     parameters = data;
                 }
             } );
@@ -395,6 +394,18 @@
                 // Организация вычитания
                 if (reqType == "Sub")
                 {
+                    // Заполнение выделенной строки новыми данными
+                    parameters[1] = addType.value;
+                    parameters[2] = addName.value;
+                    parameters[3] = addValue.value;
+                    parameters[4] = addUnit.value;
+                    parameters[5] = addTol.value;
+                    parameters[6] = addPower.value;
+                    parameters[7] = addCase.value;
+                    parameters[8] = addManufacturer.value;
+                    parameters[10] = addCellNum.value;
+
+                    
                     var currentCnt = Number(parameters[9]);
                     var newCnt = currentCnt - Number(subNum.value);
                     if (newCnt < 0)
@@ -554,6 +565,8 @@
             // Обработка нажатия кнопки списания позциии
             $('#buttonMinus').on('click', function(){
                 requestType = "Sub";
+                //Загрузка данных выделенной строки
+                updateModalContent(parameters);
                 //Списание существующей позиции
                 positionControl(requestType);
                 return false;
