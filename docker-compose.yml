@@ -1,0 +1,42 @@
+version: '2'
+
+networks:
+  default:
+    name: local-stack
+  components_network:
+    external: false
+
+services:
+
+  components_app:
+    container_name: components_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - components_network
+    volumes:
+      - ./config.py:/app/config.py
+      - ./dump:/app/dump
+    ports:
+      - "5123:5123"
+    depends_on:
+       - components_db
+
+  components_db:
+    image: mysql:8
+    container_name: components_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=comp_db
+      - MYSQL_USER=comp_db
+      - MYSQL_PASSWORD=comp_db
+      - MYSQL_DATABASE=comp_db
+    networks:
+      - components_network
+    volumes:
+      - ./MySQL_Data/MySQL_Storage:/var/lib/mysql
+      - ./MySQL_Data/SQL_Dump:/docker-entrypoint-initdb.d
+
+

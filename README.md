@@ -106,3 +106,33 @@ DUMP_PATH = "/dump/dump.sql"
 ```
 
 Флаг RELATIVE_PATH указывает использовать каталог относительно папки проекта (True) или абсолютный путь (False).
+
+
+## Пример полной конфигурации приложения
+
+```
+#----WEB server settings----#
+# WEB server host
+HTTP_HOST = "0.0.0.0"
+# WEB server port
+HTTP_PORT = 5123
+# Userts and passwords
+ACCOUNTS = ["user1:pswd1", "user2:pswd2"]
+#----Database settings----#
+# Host for mySQL database
+DB_HOST = "components_db"
+# Port for mySQL database
+DB_PORT = 3306
+# User of database
+DB_USER = "comp_db"
+# Name of database
+DB_NAME = "comp_db"
+# Password for database
+DB_PSWD = "comp_db"
+#-----Backup settings-----#
+# Using relative path
+RELATIVE_PATH = True
+# Path for saving dump
+DUMP_PATH = "/dump/dump.sql"
+
+```
