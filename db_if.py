@@ -6,12 +6,14 @@ from config import DB_USER
 from config import DB_PSWD
 from config import DB_HOST
 from config import DB_NAME
+from config import DB_PORT
 
 # Обработчик соединения к базе 
 dbhandle = MySQLDatabase(
     DB_NAME, user=DB_USER,
     password=DB_PSWD,
-    host=DB_HOST
+    host=DB_HOST,
+    port=DB_PORT
 )
 
 # Базовая модель
