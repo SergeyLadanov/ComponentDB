@@ -25,6 +25,8 @@ ACCOUNTS = ["user1:pswd1", "user2:pswd2"]
 #----Database settings----#
 # Host for mySQL database
 DB_HOST = "localhost"
+# Port for mySQL database
+DB_PORT = "localhost"
 # User of database
 DB_USER = ""
 # Name of database

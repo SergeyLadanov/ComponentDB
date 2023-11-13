@@ -51,6 +51,8 @@ exit
 #----Database settings----#
 # Host for mySQL database
 DB_HOST = "localhost"
+# Port for mySQL database
+DB_PORT = 3306
 # User of database
 DB_USER = "user_name"
 # Name of database
