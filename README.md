@@ -136,3 +136,9 @@ RELATIVE_PATH = True
 DUMP_PATH = "/dump/dump.sql"
 
 ```
+
+## Создание дампа базы данных
+
+```
+sudo docker-compose run --rm components_app python3 dump.py
+```
