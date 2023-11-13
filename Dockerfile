@@ -10,6 +10,7 @@ RUN rm -r .git && \
 	apt-get install python3-pip -y && \
 	apt-get install python3-venv -y && \
 	python3 -m venv flask_env && \
+ 	apt-get install mariadb-client && \
 	. flask_env/bin/activate && \
 	pip3 install -r requirements.txt && \
 	apt-get remove python3-pip -y && apt autoremove -y && apt autoclean -y && \

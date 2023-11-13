@@ -8,4 +8,4 @@ if config.RELATIVE_PATH:
 else:
     path = config.DUMP_PATH
 
-os.system("mysqldump " + "-u" + config.DB_USER + ' ' + "-p" + config.DB_PSWD + ' ' + config.DB_NAME + " > " + path)
+os.system("mysqldump" + ' ' + '--host=' + config.DB_HOST + ' ' + '--port=' + config.DB_PORT + ' ' + "--user=" + config.DB_USER + ' ' + "--password=" + config.DB_PSWD + ' ' + config.DB_NAME + " > " + path) #--no-tablespaces
