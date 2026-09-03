@@ -31,8 +31,8 @@ button, input, select, textarea { font: inherit; }
 .eyebrow { font-size: 10px; letter-spacing: 1.6px; font-weight: 650; color: var(--app-muted); margin-bottom: 9px; }
 h1 { font-size: 30px; letter-spacing: -.8px; font-weight: 650; margin-bottom: 8px; }
 .page-description { color: var(--app-muted); margin-bottom: 0; }
-.add-button { padding: 10px 18px; white-space: nowrap; }
-.add-button span { font-size: 19px; margin-right: 5px; }
+.add-button { white-space: nowrap; }
+.add-button span { margin-right: 4px; }
 .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 26px; }
 .summary-card { padding: 18px 22px; border: 1px solid var(--app-border); border-radius: 10px; background: var(--app-surface); display: flex; flex-direction: column; gap: 4px; }
 .summary-card > span { color: var(--app-muted); font-size: 13px; }

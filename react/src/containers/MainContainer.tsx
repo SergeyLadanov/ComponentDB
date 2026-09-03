@@ -57,6 +57,11 @@ export default function MainContainer() {
     if (selectedId && !components.some(item => item.id === selectedId)) setSelectedId(null)
   }, [components, selectedId])
   useEffect(() => { if (page > pages) setPage(pages) }, [page, pages])
+  useEffect(() => {
+    if (!notice) return
+    const timeout = window.setTimeout(() => setNotice(''), 3000)
+    return () => window.clearTimeout(timeout)
+  }, [notice])
 
   function openForm(editing: boolean, component = selected) {
     setActionError('')
@@ -101,7 +106,6 @@ export default function MainContainer() {
   return <main className="app-main">
     <div className="page-heading">
       <div><p className="eyebrow">ВАШ СКЛАД КОМПОНЕНТОВ</p><h1>Учет компонентов</h1><p className="page-description">Все позиции, характеристики и остатки в одном месте.</p></div>
-      <button className="btn btn-primary add-button" disabled={disabled} onClick={() => openForm(false)}><span aria-hidden="true">＋</span> Добавить позицию</button>
     </div>
 
     <section className="summary-grid" aria-label="Статистика склада">
@@ -124,6 +128,7 @@ export default function MainContainer() {
       <div className="selection-toolbar">
         <span className="selection-status">{selected ? <>Позиция <strong>№{selected.id}</strong><span className="selection-quantity">Остаток: <strong>{selected.cnt} шт.</strong></span></> : 'Выберите позицию в таблице'}</span>
         <div className="selection-actions">
+          <button className="btn btn-sm btn-primary add-button" disabled={disabled} onClick={() => openForm(false)}><span aria-hidden="true">＋</span> Добавить позицию</button>
           <button className="btn btn-sm btn-outline-secondary" disabled={!selected || disabled} onClick={() => openForm(true)}>Редактировать</button>
           <button className="btn btn-sm btn-outline-danger" disabled={!selected || disabled} onClick={remove}>Удалить</button>
           <div className="write-off-controls">
