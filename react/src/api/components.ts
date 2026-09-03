@@ -1,8 +1,12 @@
 import { columns, Component, ComponentForm, Operation } from '../ts/types'
+import { csrfHeaders } from './auth'
 
 async function checkResponse(response: Response) {
   if (response.ok) return
-  if (response.status === 401) throw new Error('Требуется авторизация. Обновите страницу и введите логин и пароль.')
+  if (response.status === 401) {
+    window.location.replace('/login')
+    throw new Error('Сессия завершена. Войдите снова.')
+  }
   let message = 'Не удалось выполнить запрос. Проверьте соединение с сервером и повторите попытку.'
   if (response.headers.get('content-type')?.includes('application/json')) {
     const body = await response.json()
@@ -26,6 +30,7 @@ export async function saveComponent(operation: Operation, form: ComponentForm, i
   const response = await fetch('/request_handler', {
     method: 'POST',
     credentials: 'same-origin',
+    headers: csrfHeaders(),
     body: new URLSearchParams({ ...form, id, reqtype: operation }),
   })
   await checkResponse(response)

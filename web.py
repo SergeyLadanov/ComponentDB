@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-from flask import Flask, render_template, request, make_response
+from flask import Flask, render_template, request, redirect, session, url_for
+from datetime import timedelta
 from functools import wraps
 import os
+import secrets
 
 
 # Текущий путь приложения
@@ -46,27 +48,95 @@ DUMP_PATH = "/dump/dump.sql"'''
 # Импорт модуля для работы с БД
 import db_if
 
-# Организация базовой авторизации
+# Учетные записи общие для страницы входа и API.
 def checkAuth(username, password):
+    if not isinstance(username, str) or not isinstance(password, str):
+        return False
     for item in ACCOUNTS:
-        record = item.split(':')
-        usr = record[0]
-        pswd = record[1]
-        if usr == username and pswd == password:
+        usr, separator, pswd = item.partition(':')
+        if separator and usr == username and secrets.compare_digest(pswd.encode(), password.encode()):
             return True
     return False
+
+
+def session_username():
+    username = session.get('username')
+    return username if username and any(item.partition(':')[0] == username for item in ACCOUNTS) else None
+
+
+def valid_csrf():
+    token = session.get('csrf_token')
+    supplied = request.headers.get('X-CSRF-Token', '')
+    return bool(token and secrets.compare_digest(token.encode(), supplied.encode()))
+
 
 # Декоратор авторизации
 def auth_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth = request.authorization
-        if auth and checkAuth(auth.username, auth.password):
+        if session_username():
+            if request.endpoint == 'request_handler' and not valid_csrf():
+                return {'error': 'Сессия изменилась. Обновите страницу и повторите попытку.'}, 403
             return f(*args, **kwargs)
-        return make_response('Authorization failed!', 401, {'WWW-Authenticate' : 'Basic realm="Login Required"'})
+        # Basic Auth остается доступен для существующих клиентов API.
+        auth = request.authorization
+        if request.endpoint != 'index' and auth and auth.type == 'basic' and checkAuth(auth.username, auth.password):
+            return f(*args, **kwargs)
+        if request.endpoint == 'index':
+            return redirect(url_for('login'))
+        return {'error': 'Требуется авторизация.'}, 401
     return decorated
 #------------------------------
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=os.environ.get('COMPONENTDB_SECRET_KEY') or secrets.token_hex(32),
+    SESSION_COOKIE_NAME='componentdb_session',
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=os.environ.get('COMPONENTDB_COOKIE_SECURE') == '1',
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+    SESSION_REFRESH_EACH_REQUEST=False,
+)
+
+
+@app.after_request
+def prevent_private_caching(response):
+    if request.endpoint != 'static':
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@app.route('/auth/session')
+def auth_session():
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_urlsafe(32)
+    return {'username': session_username(), 'csrfToken': session['csrf_token']}
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        if session_username():
+            return redirect(url_for('index'))
+        return render_template('index.html')
+    if not valid_csrf():
+        return {'error': 'Сессия изменилась. Обновите страницу и повторите попытку.'}, 403
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not checkAuth(data.get('username'), data.get('password')):
+        return {'error': 'Неверный логин или пароль.'}, 401
+    session.clear()
+    session.permanent = True
+    session['username'] = data['username']
+    session['csrf_token'] = secrets.token_urlsafe(32)
+    return {'username': session['username']}
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    if not valid_csrf():
+        return {'error': 'Сессия изменилась. Обновите страницу и повторите попытку.'}, 403
+    session.clear()
+    return {'ok': True}
 
 # Корневой каталог
 @app.route("/")

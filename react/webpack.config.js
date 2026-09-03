@@ -33,8 +33,8 @@ module.exports = (env, argv) => ({
     hot: true,
     devMiddleware: { index: true, publicPath: '/static/dist/' },
     proxy: [{
-      // The document also goes through Flask so Basic Auth works on port 8080.
-      context: pathname => ['/', '/get_data', '/request_handler'].includes(pathname),
+      // Flask serves page routes and session cookies on the same development origin.
+      context: pathname => ['/', '/login', '/logout', '/auth/session', '/get_data', '/request_handler'].includes(pathname),
       target: process.env.FLASK_URL || 'http://127.0.0.1:5000',
     }],
   },
