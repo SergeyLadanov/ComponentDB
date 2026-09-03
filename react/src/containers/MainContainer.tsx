@@ -3,6 +3,7 @@ import { saveComponent } from '../api/components'
 import ComponentForm from '../components/ComponentForm'
 import ComponentTable from '../components/ComponentTable'
 import { useComponents } from '../hooks/useComponents'
+import { createComponentSearch, createSearchHighlighter } from '../ts/search'
 import { ColumnFilters, ColumnKey, columns, ComponentForm as FormData, componentTypes, emptyForm, Operation } from '../ts/types'
 
 const compare = new Intl.Collator('ru', { numeric: true, sensitivity: 'base' })
@@ -25,13 +26,13 @@ export default function MainContainer() {
   const [notice, setNotice] = useState('')
 
   const types = useMemo(() => Array.from(new Set([...componentTypes, ...components.map(item => item.group)])), [components])
+  const highlight = useMemo(() => createSearchHighlighter(search, components.map(item => item.unit)), [search, components])
   const filtered = useMemo(() => {
-    const words = normalize(search).split(/\s+/).filter(Boolean)
+    const matchesSearch = createComponentSearch(search, components.map(item => item.unit))
     const columnFilters = Object.entries(filters) as [ColumnKey, string][]
     return components.filter(item => {
       if (type && item.group !== type) return false
-      const text = normalize(columns.map(column => item[column.key]).join(' '))
-      return words.every(word => text.includes(word)) && columnFilters.every(([key, value]) => normalize(item[key]).includes(normalize(value)))
+      return matchesSearch(item) && columnFilters.every(([key, value]) => normalize(item[key]).includes(normalize(value)))
     }).sort((left, right) => {
       const column = columns.find(item => item.key === sort.key)
       let value = compare.compare(left[sort.key], right[sort.key])
@@ -138,7 +139,7 @@ export default function MainContainer() {
         </div>
       </div>
 
-      <ComponentTable rows={rows} selectedId={selectedId} onSelect={id => setSelectedId(current => current === id ? null : id)} onEdit={item => openForm(true, item)} filters={filters} onFilter={(key, value) => setFilters(current => ({ ...current, [key]: value }))} sort={sort} onSort={key => setSort(current => ({ key, ascending: current.key === key ? !current.ascending : true }))} loading={loading} disabled={disabled} />
+      <ComponentTable rows={rows} highlight={highlight} selectedId={selectedId} onSelect={id => setSelectedId(current => current === id ? null : id)} onEdit={item => openForm(true, item)} filters={filters} onFilter={(key, value) => setFilters(current => ({ ...current, [key]: value }))} sort={sort} onSort={key => setSort(current => ({ key, ascending: current.key === key ? !current.ascending : true }))} loading={loading} disabled={disabled} />
 
       <div className="table-footer">
         <span role="status">{filtered.length ? `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filtered.length)} из ${filtered.length}` : 'Нет записей'}</span>

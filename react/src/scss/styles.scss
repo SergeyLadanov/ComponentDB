@@ -5,6 +5,8 @@
   --app-border: #e0e7eb;
   --app-tint: #f7f9fb;
   --app-selected: #e7f3f2;
+  --app-match-bg: #ffe49a;
+  --app-match-color: #493400;
 }
 [data-bs-theme='dark'] {
   --app-bg: #121c23;
@@ -13,6 +15,8 @@
   --app-border: #334550;
   --app-tint: #22323d;
   --app-selected: #23433f;
+  --app-match-bg: #735719;
+  --app-match-color: #fff1bf;
 }
 body { margin: 0; background: var(--app-bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
 button, input, select, textarea { font: inherit; }
@@ -76,6 +80,7 @@ h1 { font-size: 30px; letter-spacing: -.8px; font-weight: 650; margin-bottom: 8p
 .cell-description { min-width: 170px; max-width: 330px; overflow-wrap: anywhere; }
 .cell-group, .cell-changed, .cell-unit { white-space: nowrap; }
 .cell-value, .cell-cnt { font-variant-numeric: tabular-nums; }
+.search-match { padding: 0; border-radius: 2px; background: var(--app-match-bg); color: var(--app-match-color); }
 .quantity { display: inline-block; background: var(--app-selected); border-radius: 5px; padding: 3px 9px; min-width: 36px; text-align: center; font-weight: 600; }
 .quantity-empty { background: var(--app-tint); color: var(--app-muted); }
 .component-table .empty-state { padding: 64px 16px; text-align: center; color: var(--app-muted); cursor: default; }

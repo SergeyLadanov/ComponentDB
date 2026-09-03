@@ -9,7 +9,8 @@
     "build": "webpack --mode production",
     "watch": "webpack --mode development --watch",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && npm run build"
+    "test:search": "tsc src/ts/search.ts --target ES2017 --module commonjs --lib ES2020,DOM --strict --skipLibCheck --outDir ../.test-artifacts/search && node --test tests/search.test.cjs",
+    "test": "npm run typecheck && npm run test:search && npm run build"
   },
   "dependencies": {
     "bootstrap": "5.3.3",
