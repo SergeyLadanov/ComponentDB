@@ -1,144 +1,187 @@
 # ComponentDB
-WEB приложение для учета электронных компонентов
 
-![Внешний вид](preview.png)
+Веб-приложение для учета электронных компонентов: Flask + MySQL/Peewee и React + TypeScript + Webpack.
+Интерфейс перенесен на основу **FlaskReactTemplate**: каталог `react`, точка входа `src/ts/index.tsx`, React-компоненты, Bootstrap 5, SCSS и сборка Webpack, которую раздает Flask.
 
-## Установка необходимых компонентов
+## Возможности
 
-### Установка python
-https://www.python.org
-### Установка модулей для работы с базой данных mySQL
-```
-pip install peewee
-pip install cryptography
-pip install PyMySQL
-```
+- Все 12 полей существующей базы, сортировка, общий поиск и поиск в каждом столбце.
+- Фильтр по классификации и страницы по 25, 50 или 100 записей.
+- Добавление, редактирование, удаление с подтверждением и списание от 1 до 10 штук. Остаток не становится отрицательным.
+- Добавление по образцу: выберите строку и нажмите «Добавить позицию». Количество новой партии по умолчанию равно 1.
+- При совпадении характеристик сервер объединяет позиции и суммирует количество, как в прежней версии.
+- Светлая, темная и системная темы; адаптивная страница и горизонтальная прокрутка таблицы.
+- Состояния загрузки, сообщения об ошибках и повторная загрузка. Форма сохраняет введенные данные при неудачной отправке.
 
-### Установка модулей для WEB приложения
+Схема MySQL, `config.py`, Basic Auth и адреса `/get_data` и `/request_handler` сохранены. Перенос данных не требуется. Исходный проект FlaskReactTemplate не изменяется.
 
-```
-pip install flask
-pip install cherrypy
-```
-### Установка mysql сервера
-Инструкция на сайте: https://www.mysql.com
+## Установка
 
-## Подготовка базы данных
-### Создание БД
-Запуск консоли mysql:
-```
-mysql -u root -p
-```
-Далее необходимо ввести пароль, который был указан при установке mysql.
+Требуются Python, MySQL и Node.js 20+ с npm. Node.js нужен для сборки и разработки интерфейса; при обычном запуске готовую сборку раздает Python.
 
-Создается база:
-```
-CREATE DATABASE db_name;
-```
-Создание пользователя и привилегий для использования БД:
-```
-GRANT ALL PRIVILEGES ON db_name.* TO 'user_name'@'localhost' IDENTIFIED BY 'password';
-FLUSH PRIVILEGES;
-```
-Выход
-```
-exit
+Установите зависимости Python в виртуальное окружение:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-### Настройки после создания БД
-Для указанных настроек БД соответствтующий раздел файла config.py будет выглядеть так:
+На Linux окружение активируется командой `source .venv/bin/activate`.
+
+Соберите интерфейс из корня проекта:
+
+```text
+cd react
+npm ci
+npm run build
+cd ..
 ```
-#----Database settings----#
-# Host for mySQL database
+
+Результат появится в `static/dist/`. Этот каталог и `react/node_modules/` не хранятся в Git. После изменения исходников React сборку нужно повторить.
+
+## Настройка MySQL
+
+Создайте базу и пользователя, например в консоли MySQL:
+
+```sql
+CREATE DATABASE componentdb CHARACTER SET utf8mb4;
+CREATE USER 'componentdb'@'localhost' IDENTIFIED BY 'replace-this-password';
+GRANT ALL PRIVILEGES ON componentdb.* TO 'componentdb'@'localhost';
+```
+
+Первый вызов `python run.py` при отсутствии `config.py` создает файл настроек и завершает работу. Заполните его перед следующим запуском:
+
+```python
+HTTP_HOST = "127.0.0.1"
+HTTP_PORT = 5000
+ACCOUNTS = ["user:replace-this-password"]
+
 DB_HOST = "localhost"
-# Port for mySQL database
 DB_PORT = 3306
-# User of database
-DB_USER = "user_name"
-# Name of database
-DB_NAME = "db_name"
-# Password for database
-DB_PSWD = "password"
+DB_USER = "componentdb"
+DB_NAME = "componentdb"
+DB_PSWD = "replace-this-password"
 
+RELATIVE_PATH = True
+DUMP_PATH = "/dump/dump.sql"
 ```
 
-## Запуск приложения
-Команда:
-```
+При первом подключении приложение создает таблицу компонентов, если ее еще нет. Существующий `config.py` и база используются без изменений.
+
+## Запуск
+
+Из корня проекта с активным окружением Python:
+
+```text
 python run.py
 ```
-После первого запуска приложение создаст файл config.py и закроется. После задания настроек необходимо еще раз запустить приложение.
-## Создание сервися linux
 
-В папке /etc/sytemd/system/ создается файл с расширением .service
-Например components.service:
+Откройте `http://127.0.0.1:5000` (или адрес из `config.py`) и введите учетные данные из `ACCOUNTS`. `run.py` запускает WSGI-сервер Cheroot. `web.py` запускает встроенный сервер Flask для разработки. Существующий `service.py` остается точкой запуска службы Windows; для него дополнительно нужны `pywin32` и `waitress`.
+
+## Разработка интерфейса
+
+В первом терминале запустите Flask с доступной MySQL:
+
+```text
+python web.py
 ```
+
+Во втором терминале:
+
+```text
+cd react
+npm start
+```
+
+Откройте `http://127.0.0.1:8080`. Webpack обслуживает сборку из памяти с горячим обновлением, а главную страницу и API проксирует во Flask. Поэтому Basic Auth работает и на порту 8080; отдельный CORS не требуется.
+
+По умолчанию Flask ожидается на `http://127.0.0.1:5000`. Для другого порта задайте `FLASK_URL` перед `npm start`:
+
+```powershell
+$env:FLASK_URL = "http://127.0.0.1:5123"
+npm start
+```
+
+В Bash: `FLASK_URL=http://127.0.0.1:5123 npm start`.
+
+Альтернативный режим — `npm run watch`: Webpack обновляет файлы на диске в `static/dist/`, страницу следует открывать на порту Flask и обновлять вручную.
+
+## Docker
+
+Dockerfile собирает React в отдельном этапе Node.js и копирует `static/dist` в Python-образ. Предварительная локальная сборка и Node.js на хосте не нужны.
+
+До запуска создайте обычный файл `config.py` с настройками для текущего `docker-compose.yml`:
+
+```python
+HTTP_HOST = "0.0.0.0"
+HTTP_PORT = 5123
+ACCOUNTS = ["user:replace-this-password"]
+DB_HOST = "components_db"
+DB_PORT = 3306
+DB_USER = "comp_db"
+DB_NAME = "comp_db"
+DB_PSWD = "comp_db"
+RELATIVE_PATH = True
+DUMP_PATH = "/dump/dump.sql"
+```
+
+Пароли MySQL должны соответствовать настройкам сервиса `components_db` в Compose. Затем выполните:
+
+```text
+docker compose up --build -d
+```
+
+Приложение доступно на `http://localhost:5123`. Конфигурация, дампы и каталог MySQL подключаются через тома; `.dockerignore` исключает их из контекста сборки образа.
+
+## Проверки
+
+Проверка типов и production-сборка:
+
+```text
+cd react
+npm test
+cd ..
+```
+
+Проверка настоящих Flask-маршрутов и Peewee-модели на временной SQLite-базе:
+
+```text
+python -m unittest discover -s tests -v
+```
+
+Тесты подставляют конфигурацию только на время импорта, не читают рабочий `config.py` и не подключаются к MySQL. Проверяются авторизация, формат данных, фильтры, операции с позициями, объединение дубликатов и отклонение некорректных данных.
+
+Для ручной проверки интерфейса без MySQL сначала выполните `npm run build` в `react`, затем из корня:
+
+```text
+python -m tests.preview_server
+```
+
+Тестовая страница: `http://127.0.0.1:5055`, логин `tester`, пароль `testing`. Сервер создает 66 демонстрационных позиций во временной базе; данные предназначены только для проверки. Для проверки Webpack с этим сервером задайте `FLASK_URL=http://127.0.0.1:5055`.
+
+## Резервные копии и служба Linux
+
+Для резервного копирования установите клиент MySQL/MariaDB и выполните `python dump.py`. Путь задается через `DUMP_PATH`; при `RELATIVE_PATH = True` он отсчитывается от каталога проекта. В Docker:
+
+```text
+docker compose run --rm components_app python3 dump.py
+```
+
+Пример `/etc/systemd/system/components.service` (замените пути на свои):
+
+```ini
 [Unit]
-Description=components # Service name
+Description=ComponentDB
+After=network.target
 
 [Service]
-ExecStart=/home/orangepi/ComponentDB/run.py # Path to run.py file
+WorkingDirectory=/opt/ComponentDB
+ExecStart=/opt/ComponentDB/.venv/bin/python /opt/ComponentDB/run.py
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 ```
-Далее управление сервисом осуществляется командой systemctl.
-Примеры:
-```
-systemctl enable components # Разрешить запуск сервиса при старте системы
-systemctl disable components # Запретить запуск сервиса при старте системы
-systemctl start components # Запуск сервиса
-systemctl stop components # Остановка сервиса
-```
-## Создание бэкапа БД
-Для создания резервной копии БД необходимо выполнить скрипт dump.py:
-```
-python dump.py
-```
-Путь для сохранения файла резервной копии указывается в файле config.py:
 
-```
-#-----Backup settings-----#
-# Using relative path
-RELATIVE_PATH = True
-# Path for saving dump
-DUMP_PATH = "/dump/dump.sql"
-```
-
-Флаг RELATIVE_PATH указывает использовать каталог относительно папки проекта (True) или абсолютный путь (False).
-
-
-## Пример полной конфигурации приложения
-
-```
-#----WEB server settings----#
-# WEB server host
-HTTP_HOST = "0.0.0.0"
-# WEB server port
-HTTP_PORT = 5123
-# Userts and passwords
-ACCOUNTS = ["user1:pswd1", "user2:pswd2"]
-#----Database settings----#
-# Host for mySQL database
-DB_HOST = "components_db"
-# Port for mySQL database
-DB_PORT = 3306
-# User of database
-DB_USER = "comp_db"
-# Name of database
-DB_NAME = "comp_db"
-# Password for database
-DB_PSWD = "comp_db"
-#-----Backup settings-----#
-# Using relative path
-RELATIVE_PATH = True
-# Path for saving dump
-DUMP_PATH = "/dump/dump.sql"
-
-```
-
-## Создание дампа базы данных
-
-```
-sudo docker-compose run --rm components_app python3 dump.py
-```
+После сборки интерфейса и настройки `config.py`: `systemctl daemon-reload` и `systemctl enable --now components`.

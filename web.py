@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 from flask import Flask, render_template, request, make_response
 from functools import wraps
-import json
 import os
-import sys
-import socket
 
 
 # Текущий путь приложения
-path = os.path.realpath(os.path.dirname(sys.argv[0]))
+path = os.path.dirname(os.path.abspath(__file__))
 try:
     from config import HTTP_HOST
     from config import HTTP_PORT
     from config import ACCOUNTS
-except:
+except ModuleNotFoundError as error:
+    if error.name != 'config':
+        raise
     print("This is the first start of application")
     config_content =  '''#----WEB server settings----#
 # WEB server host
@@ -26,7 +25,7 @@ ACCOUNTS = ["user1:pswd1", "user2:pswd2"]
 # Host for mySQL database
 DB_HOST = "localhost"
 # Port for mySQL database
-DB_PORT = "localhost"
+DB_PORT = 3306
 # User of database
 DB_USER = ""
 # Name of database
@@ -39,9 +38,8 @@ RELATIVE_PATH = True
 # Path for saving dump
 DUMP_PATH = "/dump/dump.sql"'''
 
-    f = open(path+'/config.py', 'w')
-    f.write(config_content)
-    f.close()
+    with open(os.path.join(path, 'config.py'), 'w', encoding='utf-8') as config_file:
+        config_file.write(config_content)
     print("Config file was created, please config application and restart it")
     exit(0)
 
@@ -81,7 +79,7 @@ def index():
 @app.route('/get_data', methods=['GET', 'POST'])
 @auth_required
 def control():
-    type_data = request.args.get('filter')
+    type_data = request.args.get('filter', '')
     data = db_if.getData(type_data)
     return data
 
@@ -90,6 +88,8 @@ def control():
 @auth_required
 def request_handler():
     type_request = request.form.get('reqtype')
+    if type_request not in ('Add', 'Edit', 'Remove'):
+        return {'error': 'Неизвестная операция.'}, 400
     repply = "OK"
     row_data = {
         "id": request.form.get('id'), 
@@ -105,6 +105,22 @@ def request_handler():
         "cellnum": request.form.get('cellnum')
     }
 
+    if type_request in ('Edit', 'Remove'):
+        row_id = row_data['id'] or ''
+        if not row_id.isascii() or not row_id.isdigit() or len(row_id) > 19 or int(row_id) <= 0:
+            return {'error': 'Некорректный ID позиции.'}, 400
+
+    if type_request != 'Remove':
+        quantity = row_data['cnt'] or ''
+        if not quantity.isascii() or not quantity.isdigit() or len(quantity) > 16 or int(quantity) > 9007199254740991:
+            return {'error': 'Количество должно быть целым неотрицательным числом.'}, 400
+        if not row_data['group']:
+            return {'error': 'Укажите тип компонента.'}, 400
+        for key in ('group', 'name', 'value', 'unit', 'tol', 'description', 'case', 'manufacturer', 'cellnum'):
+            row_data[key] = row_data[key] or ''
+            if len(row_data[key]) > 255:
+                return {'error': 'Значение поля не должно превышать 255 символов.'}, 400
+
     if type_request == "Add":
         repply = db_if.addPosition(row_data)
     if type_request == "Remove":
@@ -118,4 +134,4 @@ def request_handler():
 
 # Запуск приложения
 if __name__ == '__main__':
-    app.run(host='localhost', port=HTTP_PORT)
+    app.run(host=HTTP_HOST, port=HTTP_PORT)

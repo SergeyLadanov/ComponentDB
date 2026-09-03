@@ -2,3 +2,9 @@ config.py
 __pycache__
 dump/dump.sql
 MySQL_Data/MySQL_Storage
+react/node_modules/
+static/dist/
+.npm-cache/
+.venv/
+.pytest_cache/
+.test-artifacts/
