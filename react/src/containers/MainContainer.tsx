@@ -106,7 +106,7 @@ export default function MainContainer() {
 
   return <main className="app-main">
     <div className="page-heading">
-      <div><p className="eyebrow">ВАШ СКЛАД КОМПОНЕНТОВ</p><h1>Учет компонентов</h1><p className="page-description">Все позиции, характеристики и остатки в одном месте.</p></div>
+      <div><h1>Учет компонентов</h1></div>
     </div>
 
     <section className="summary-grid" aria-label="Статистика склада">
