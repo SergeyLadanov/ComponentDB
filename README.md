@@ -141,6 +141,31 @@ docker compose up --build -d
 
 Приложение доступно на `http://localhost:5123`. Конфигурация, дампы и каталог MySQL подключаются через тома; `.dockerignore` исключает их из контекста сборки образа.
 
+### Reverse proxy в подкаталоге
+
+Приложение может работать под произвольным URL-префиксом, например `/components/`.
+Nginx должен удалить префикс при передаче запроса приложению и сообщить Flask исходный
+префикс заголовком `X-Forwarded-Prefix`:
+
+```nginx
+location = /components {
+    return 301 /components/;
+}
+
+location /components/ {
+    proxy_pass http://127.0.0.1:5123/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /components;
+}
+```
+
+Для другого пути замените `/components` в обеих директивах `location`, в `return`
+и в `X-Forwarded-Prefix`. Завершающий `/` у `proxy_pass` важен: он удаляет внешний
+префикс перед отправкой маршрута во Flask.
+
 ## Проверки
 
 Проверка типов, регрессионные тесты поиска и production-сборка:

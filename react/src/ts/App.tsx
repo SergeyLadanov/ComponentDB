@@ -3,9 +3,10 @@ import { getSession, logout, Session } from '../api/auth'
 import MainContainer from '../containers/MainContainer'
 import LoginPage from '../components/LoginPage'
 import SwitchTheme from '../components/SwitchTheme'
+import { appPath } from './urls'
 
 export default function App() {
-  const loginPage = window.location.pathname === '/login'
+  const loginPage = window.location.pathname === appPath('/login')
   const [session, setSession] = useState<Session | null>(null)
   const [error, setError] = useState('')
   const [leaving, setLeaving] = useState(false)
@@ -15,8 +16,8 @@ export default function App() {
     setError('')
     try {
       const current = await getSession()
-      if (!current.username && !loginPage) { window.location.replace('/login'); return }
-      if (current.username && loginPage) { window.location.replace('/'); return }
+      if (!current.username && !loginPage) { window.location.replace(appPath('/login')); return }
+      if (current.username && loginPage) { window.location.replace(appPath('/')); return }
       setSession(current)
     } catch {
       setError('Не удалось связаться с сервером. Проверьте соединение и попробуйте еще раз.')
@@ -39,7 +40,7 @@ export default function App() {
     setError('')
     try {
       await logout()
-      window.location.replace('/login')
+      window.location.replace(appPath('/login'))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Не удалось выйти. Попробуйте еще раз.')
       logoutInFlight.current = false
@@ -49,7 +50,7 @@ export default function App() {
 
   return <>
     <header className="app-header">
-      <a className="brand" href="/" aria-label="ComponentDB — главная">
+      <a className="brand" href={appPath('/')} aria-label="ComponentDB — главная">
         <span className="brand-icon" aria-hidden="true">▦</span>
         <span>Component<span className="brand-accent">DB</span></span>
       </a>

@@ -1,3 +1,5 @@
+import { appPath } from '../ts/urls'
+
 export type Session = { username: string | null; csrfToken: string }
 
 let csrfToken = ''
@@ -7,7 +9,7 @@ export function csrfHeaders() {
 }
 
 export async function getSession(): Promise<Session> {
-  const response = await fetch('/auth/session', { credentials: 'same-origin', cache: 'no-store' })
+  const response = await fetch(appPath('/auth/session'), { credentials: 'same-origin', cache: 'no-store' })
   if (!response.ok) throw new Error('Не удалось проверить сессию. Попробуйте еще раз.')
   const session: Session = await response.json()
   csrfToken = session.csrfToken
@@ -15,7 +17,7 @@ export async function getSession(): Promise<Session> {
 }
 
 async function authRequest(path: string, body?: { username: string; password: string }) {
-  const response = await fetch(path, {
+  const response = await fetch(appPath(path), {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...csrfHeaders() },

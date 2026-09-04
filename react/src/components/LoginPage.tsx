@@ -1,5 +1,6 @@
 import { FormEvent, useRef, useState } from 'react'
 import { login } from '../api/auth'
+import { appPath } from '../ts/urls'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -17,7 +18,7 @@ export default function LoginPage() {
     setError('')
     try {
       await login(username, password)
-      window.location.replace('/')
+      window.location.replace(appPath('/'))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Не удалось войти. Проверьте соединение и попробуйте еще раз.')
       inFlight.current = false

@@ -4,6 +4,7 @@ from datetime import timedelta
 from functools import wraps
 import os
 import secrets
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 # Текущий путь приложения
@@ -88,6 +89,15 @@ def auth_required(f):
     return decorated
 #------------------------------
 app = Flask(__name__)
+# Учитываем префикс, переданный доверенным reverse proxy в
+# X-Forwarded-Prefix (например, /components).
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,
+    x_proto=1,
+    x_host=1,
+    x_prefix=1,
+)
 app.config.update(
     SECRET_KEY=os.environ.get('COMPONENTDB_SECRET_KEY') or secrets.token_hex(32),
     SESSION_COOKIE_NAME='componentdb_session',

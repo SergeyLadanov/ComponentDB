@@ -10,7 +10,9 @@ module.exports = (env, argv) => ({
   output: {
     path: path.resolve(__dirname, '../static/dist'),
     filename: 'index.js',
-    publicPath: '/static/dist/',
+    // Infer the asset root from the loaded script URL so production builds also
+    // work behind an arbitrary reverse-proxy prefix such as /components/.
+    publicPath: 'auto',
     clean: true,
   },
   resolve: { extensions: ['.tsx', '.ts', '.js'] },

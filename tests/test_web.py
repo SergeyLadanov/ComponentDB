@@ -56,6 +56,17 @@ class ComponentApiTest(unittest.TestCase):
         self.assertIn('/static/dist/index.js', html)
         self.assertNotIn('jquery', html)
 
+    def test_reverse_proxy_prefix_is_used_for_redirects_and_assets(self):
+        headers = {'X-Forwarded-Prefix': '/components'}
+        response = self.client.get('/', headers=headers)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, '/components/login')
+
+        html = self.client.get('/login', headers=headers).get_data(as_text=True)
+        self.assertIn('content="/components"', html)
+        self.assertIn('/components/static/favicon.ico', html)
+        self.assertIn('/components/static/dist/index.js', html)
+
     def test_login_page_and_session_lifecycle(self):
         self.assertEqual(self.client.get('/login').status_code, 200)
         anonymous = self.client.get('/auth/session')

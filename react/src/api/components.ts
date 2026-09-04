@@ -1,10 +1,11 @@
 import { columns, Component, ComponentForm, Operation } from '../ts/types'
+import { appPath } from '../ts/urls'
 import { csrfHeaders } from './auth'
 
 async function checkResponse(response: Response) {
   if (response.ok) return
   if (response.status === 401) {
-    window.location.replace('/login')
+    window.location.replace(appPath('/login'))
     throw new Error('Сессия завершена. Войдите снова.')
   }
   let message = 'Не удалось выполнить запрос. Проверьте соединение с сервером и повторите попытку.'
@@ -16,7 +17,7 @@ async function checkResponse(response: Response) {
 }
 
 export async function getComponents(signal?: AbortSignal): Promise<Component[]> {
-  const response = await fetch('/get_data?filter=', { credentials: 'same-origin', cache: 'no-store', signal })
+  const response = await fetch(appPath('/get_data?filter='), { credentials: 'same-origin', cache: 'no-store', signal })
   await checkResponse(response)
   const result = await response.json()
   if (!Array.isArray(result.data)) throw new Error('Сервер вернул некорректные данные.')
@@ -27,7 +28,7 @@ export async function getComponents(signal?: AbortSignal): Promise<Component[]> 
 }
 
 export async function saveComponent(operation: Operation, form: ComponentForm, id = '') {
-  const response = await fetch('/request_handler', {
+  const response = await fetch(appPath('/request_handler'), {
     method: 'POST',
     credentials: 'same-origin',
     headers: csrfHeaders(),
