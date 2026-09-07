@@ -3,8 +3,11 @@ from flask import Flask, render_template, request, redirect, session, url_for
 from datetime import timedelta
 from functools import wraps
 import os
+from pathlib import Path
 import secrets
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.exceptions import RequestEntityTooLarge
+from delivery_import import DeliveryImportError, parse_delivery_workbook
 
 
 # Текущий путь приложения
@@ -76,7 +79,7 @@ def auth_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if session_username():
-            if request.endpoint == 'request_handler' and not valid_csrf():
+            if request.method not in ('GET', 'HEAD', 'OPTIONS') and not valid_csrf():
                 return {'error': 'Сессия изменилась. Обновите страницу и повторите попытку.'}, 403
             return f(*args, **kwargs)
         # Basic Auth остается доступен для существующих клиентов API.
@@ -106,6 +109,7 @@ app.config.update(
     SESSION_COOKIE_SECURE=os.environ.get('COMPONENTDB_COOKIE_SECURE') == '1',
     PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
     SESSION_REFRESH_EACH_REQUEST=False,
+    MAX_CONTENT_LENGTH=5 * 1024 * 1024,
 )
 
 
@@ -114,6 +118,11 @@ def prevent_private_caching(response):
     if request.endpoint != 'static':
         response.headers['Cache-Control'] = 'no-store'
     return response
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def upload_too_large(_error):
+    return {'error': 'Размер Excel-отчёта не должен превышать 5 МБ.'}, 413
 
 
 @app.route('/auth/session')
@@ -163,6 +172,137 @@ def control():
     data = db_if.getData(type_data)
     return data
 
+
+def positive_id(value, label):
+    value = str(value or '')
+    if not value.isascii() or not value.isdigit() or len(value) > 19 or int(value) <= 0:
+        raise ValueError(f'Некорректный ID {label}.')
+    return int(value)
+
+
+def validate_component_data(data, positive_quantity=False):
+    if not isinstance(data, dict):
+        raise ValueError('Некорректные данные позиции.')
+    result = {
+        key: data.get(key)
+        for key in ('group', 'name', 'value', 'unit', 'tol', 'description',
+                    'case', 'manufacturer', 'cnt', 'cellnum')
+    }
+    quantity = str(result['cnt'] if result['cnt'] is not None else '')
+    if (not quantity.isascii() or not quantity.isdigit() or len(quantity) > 16
+            or int(quantity) > 9007199254740991
+            or (positive_quantity and int(quantity) <= 0)):
+        qualifier = 'положительным ' if positive_quantity else 'неотрицательным '
+        raise ValueError(f'Количество должно быть целым {qualifier}числом.')
+    if not result['group']:
+        raise ValueError('Укажите тип компонента.')
+    result['cnt'] = int(quantity)
+    for key in ('group', 'name', 'value', 'unit', 'tol', 'description',
+                'case', 'manufacturer', 'cellnum'):
+        result[key] = str(result[key] or '').strip()
+        if len(result[key]) > 255:
+            raise ValueError('Значение поля не должно превышать 255 символов.')
+    return result
+
+
+@app.route('/deliveries', methods=['GET'])
+@auth_required
+def deliveries():
+    return {'data': db_if.getExpectedDeliveries()}
+
+
+@app.route('/deliveries/import', methods=['POST'])
+@auth_required
+def import_delivery():
+    upload = request.files.get('file')
+    if upload is None or not upload.filename:
+        return {'error': 'Выберите Excel-отчёт.'}, 400
+    source_file = upload.filename.replace('\\', '/').rsplit('/', 1)[-1]
+    name = str(request.form.get('name') or Path(source_file).stem).strip()
+    if not name:
+        name = 'Поставка'
+    if len(name) > 255 or len(source_file) > 255:
+        return {'error': 'Название поставки или файла длиннее 255 символов.'}, 400
+    try:
+        items = parse_delivery_workbook(upload.stream, source_file)
+    except DeliveryImportError as error:
+        return {'error': str(error)}, 400
+    delivery_id = db_if.createExpectedDelivery(name, source_file, items)
+    return {'id': delivery_id, 'items': len(items)}, 201
+
+
+@app.route('/deliveries/<delivery_id>/items', methods=['PUT'])
+@auth_required
+def update_delivery_items(delivery_id):
+    try:
+        delivery_id = positive_id(delivery_id, 'поставки')
+        payload = request.get_json(silent=True)
+        source_items = payload.get('items') if isinstance(payload, dict) else None
+        if not isinstance(source_items, list) or not source_items or len(source_items) > 5000:
+            raise ValueError('Передайте от 1 до 5000 позиций для сохранения.')
+        items = []
+        item_ids = set()
+        for source_item in source_items:
+            item_id = positive_id(
+                source_item.get('id') if isinstance(source_item, dict) else None,
+                'позиции',
+            )
+            if item_id in item_ids:
+                raise ValueError('Список содержит повторяющийся ID позиции.')
+            item_ids.add(item_id)
+            item = validate_component_data(source_item, positive_quantity=True)
+            item['id'] = item_id
+            items.append(item)
+        saved = db_if.updateExpectedDeliveryItems(delivery_id, items)
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    if not saved:
+        return {'error': 'Поставка не найдена.'}, 404
+    return {'updated': len(items)}
+
+
+@app.route('/deliveries/<delivery_id>/items/<item_id>', methods=['PUT', 'DELETE'])
+@auth_required
+def update_delivery_item(delivery_id, item_id):
+    try:
+        delivery_id = positive_id(delivery_id, 'поставки')
+        item_id = positive_id(item_id, 'позиции')
+        if request.method == 'DELETE':
+            if not db_if.deleteExpectedDeliveryItem(delivery_id, item_id):
+                return {'error': 'Поставка или позиция не найдена.'}, 404
+            return {'ok': True}
+        data = validate_component_data(request.get_json(silent=True), positive_quantity=True)
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    if not db_if.updateExpectedDeliveryItem(delivery_id, item_id, data):
+        return {'error': 'Поставка или позиция не найдена.'}, 404
+    return {'ok': True}
+
+
+@app.route('/deliveries/<delivery_id>/confirm', methods=['POST'])
+@auth_required
+def confirm_delivery(delivery_id):
+    try:
+        delivery_id = positive_id(delivery_id, 'поставки')
+        result = db_if.confirmExpectedDelivery(delivery_id)
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    if result is None:
+        return {'error': 'Поставка уже обработана или не найдена.'}, 409
+    return result
+
+
+@app.route('/deliveries/<delivery_id>/cancel', methods=['POST'])
+@auth_required
+def cancel_delivery(delivery_id):
+    try:
+        delivery_id = positive_id(delivery_id, 'поставки')
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    if not db_if.cancelExpectedDelivery(delivery_id):
+        return {'error': 'Поставка уже обработана или не найдена.'}, 409
+    return {'ok': True}
+
 # Обработка запроса на изменение базы данных
 @app.route('/request_handler', methods=['GET', 'POST'])
 @auth_required
@@ -191,15 +331,10 @@ def request_handler():
             return {'error': 'Некорректный ID позиции.'}, 400
 
     if type_request != 'Remove':
-        quantity = row_data['cnt'] or ''
-        if not quantity.isascii() or not quantity.isdigit() or len(quantity) > 16 or int(quantity) > 9007199254740991:
-            return {'error': 'Количество должно быть целым неотрицательным числом.'}, 400
-        if not row_data['group']:
-            return {'error': 'Укажите тип компонента.'}, 400
-        for key in ('group', 'name', 'value', 'unit', 'tol', 'description', 'case', 'manufacturer', 'cellnum'):
-            row_data[key] = row_data[key] or ''
-            if len(row_data[key]) > 255:
-                return {'error': 'Значение поля не должно превышать 255 символов.'}, 400
+        try:
+            row_data.update(validate_component_data(row_data))
+        except ValueError as error:
+            return {'error': str(error)}, 400
 
     if type_request == "Add":
         repply = db_if.addPosition(row_data)

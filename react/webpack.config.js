@@ -36,7 +36,7 @@ module.exports = (env, argv) => ({
     devMiddleware: { index: true, publicPath: '/static/dist/' },
     proxy: [{
       // Flask serves page routes and session cookies on the same development origin.
-      context: pathname => ['/', '/login', '/logout', '/auth/session', '/get_data', '/request_handler'].includes(pathname),
+      context: pathname => ['/', '/login', '/logout', '/auth/session', '/get_data', '/request_handler'].includes(pathname) || pathname.startsWith('/deliveries'),
       target: process.env.FLASK_URL || 'http://127.0.0.1:5000',
     }],
   },

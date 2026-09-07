@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { saveComponent } from '../api/components'
+import { getExpectedDeliveries, saveComponent } from '../api/components'
 import ComponentForm from '../components/ComponentForm'
 import ComponentTable from '../components/ComponentTable'
+import ExpectedDeliveries from '../components/ExpectedDeliveries'
 import { useComponents } from '../hooks/useComponents'
 import { createComponentSearch, createSearchHighlighter } from '../ts/search'
-import { ColumnFilters, ColumnKey, columns, ComponentForm as FormData, componentTypes, emptyForm, Operation } from '../ts/types'
+import { ColumnFilters, ColumnKey, columns, ComponentForm as FormData, componentTypes, emptyForm, ExpectedDelivery, Operation } from '../ts/types'
 
 const compare = new Intl.Collator('ru', { numeric: true, sensitivity: 'base' })
 const normalize = (text: string) => text.toLocaleLowerCase('ru').trim()
@@ -24,6 +25,9 @@ export default function MainContainer() {
   const inFlight = useRef(false)
   const [actionError, setActionError] = useState('')
   const [notice, setNotice] = useState('')
+  const [deliveries, setDeliveries] = useState<ExpectedDelivery[]>([])
+  const [deliveriesOpen, setDeliveriesOpen] = useState(false)
+  const [deliveriesLoading, setDeliveriesLoading] = useState(false)
 
   const types = useMemo(() => Array.from(new Set([...componentTypes, ...components.map(item => item.group)])), [components])
   const highlight = useMemo(() => createSearchHighlighter(search, components.map(item => item.unit)), [search, components])
@@ -63,7 +67,18 @@ export default function MainContainer() {
     const timeout = window.setTimeout(() => setNotice(''), 3000)
     return () => window.clearTimeout(timeout)
   }, [notice])
+  useEffect(() => { void reloadDeliveries() }, [])
 
+  async function reloadDeliveries() {
+    setDeliveriesLoading(true)
+    try {
+      setDeliveries(await getExpectedDeliveries())
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : 'Не удалось загрузить ожидаемые поставки.')
+    } finally {
+      setDeliveriesLoading(false)
+    }
+  }
   function openForm(editing: boolean, component = selected) {
     setActionError('')
     setNotice('')
@@ -94,6 +109,18 @@ export default function MainContainer() {
     }
   }
 
+  async function showConfirmedDelivery(result: { created: number; merged: number }) {
+    setType('')
+    setSearch('')
+    setFilters({})
+    setSort({ key: 'changed', ascending: false })
+    setPage(1)
+    setSelectedId(null)
+    setDeliveriesOpen(false)
+    await reload()
+    setNotice(`Поставка подтверждена: новых позиций — ${result.created}, объединено — ${result.merged}. Последние изменения показаны сверху.`)
+  }
+
   function remove() {
     if (selected && window.confirm(`Удалить позицию №${selected.id} «${selected.name || selected.group}»?`)) void mutate('Remove', selected, selected.id)
   }
@@ -107,6 +134,9 @@ export default function MainContainer() {
   return <main className="app-main">
     <div className="page-heading">
       <div><h1>Учет компонентов</h1></div>
+      <button className="btn btn-outline-primary deliveries-button" onClick={() => { setDeliveriesOpen(true); void reloadDeliveries() }}>
+        Ожидаемые поставки <span>{deliveries.length}</span>
+      </button>
     </div>
 
     <section className="summary-grid" aria-label="Статистика склада">
@@ -155,5 +185,6 @@ export default function MainContainer() {
     </section>
     <p className="table-hint">Двойной щелчок по строке — редактирование. «Добавить позицию» при выбранной строке — добавление по образцу.</p>
     {modal && <ComponentForm initial={modal.initial} editing={modal.editing} busy={busy} error={actionError} onClose={() => { setModal(null); setActionError('') }} onSubmit={form => mutate(modal.editing ? 'Edit' : 'Add', form, modal.id)} />}
+    {deliveriesOpen && <ExpectedDeliveries deliveries={deliveries} loading={deliveriesLoading} onClose={() => setDeliveriesOpen(false)} onReload={reloadDeliveries} onConfirmed={showConfirmedDelivery} onNotice={setNotice} />}
   </main>
 }

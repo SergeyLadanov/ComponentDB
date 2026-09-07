@@ -37,11 +37,293 @@ class Component(BaseModel):
     ChangeDate = DateTimeField(default=datetime.now)
 
 
+class ExpectedDelivery(BaseModel):
+    ID = BigAutoField()
+    Name = CharField(null=False)
+    SourceFile = CharField(null=False)
+    Status = CharField(null=False, default="pending")
+    CreatedDate = DateTimeField(default=datetime.now)
+    ConfirmedDate = DateTimeField(null=True)
+
+
+class ExpectedDeliveryItem(BaseModel):
+    ID = BigAutoField()
+    Delivery = ForeignKeyField(
+        ExpectedDelivery,
+        backref="items",
+        on_delete="CASCADE",
+    )
+    SourceRow = IntegerField(null=False)
+    Type = CharField(null=False)
+    ManufacturerPartNumber = CharField(null=True, default="")
+    Value = CharField(null=True, default="")
+    Units = CharField(null=True, default="")
+    Tolerance = CharField(null=True, default="")
+    Description = CharField(null=True, default="")
+    Case = CharField(null=True, default="")
+    Manufacturer = CharField(null=True, default="")
+    Quantity = BigIntegerField(null=False)
+    CellNumber = CharField(null=False, default="")
+
+
 # Функция инициализации базы данных
 def dbInit():
     dbhandle.connect()
-    dbhandle.create_tables([Component])
+    dbhandle.create_tables(
+        [Component, ExpectedDelivery, ExpectedDeliveryItem],
+        safe=True,
+    )
     dbhandle.close()
+
+
+def _item_dict(item):
+    return {
+        "id": str(item.ID),
+        "sourceRow": item.SourceRow,
+        "group": item.Type,
+        "name": item.ManufacturerPartNumber or "",
+        "value": item.Value or "",
+        "unit": item.Units or "",
+        "tol": item.Tolerance or "",
+        "description": item.Description or "",
+        "case": item.Case or "",
+        "manufacturer": item.Manufacturer or "",
+        "cnt": str(item.Quantity),
+        "cellnum": item.CellNumber or "",
+    }
+
+
+def getExpectedDeliveries():
+    with dbhandle.connection_context():
+        deliveries = (
+            ExpectedDelivery.select()
+            .where(ExpectedDelivery.Status == "pending")
+            .order_by(ExpectedDelivery.CreatedDate.desc(), ExpectedDelivery.ID.desc())
+        )
+        return [
+            {
+                "id": str(delivery.ID),
+                "name": delivery.Name,
+                "sourceFile": delivery.SourceFile,
+                "created": str(delivery.CreatedDate).split('.')[0],
+                "items": [
+                    _item_dict(item)
+                    for item in delivery.items.order_by(
+                        ExpectedDeliveryItem.SourceRow,
+                        ExpectedDeliveryItem.ID,
+                    )
+                ],
+            }
+            for delivery in deliveries
+        ]
+
+
+def createExpectedDelivery(name, source_file, items):
+    with dbhandle.connection_context():
+        return _createExpectedDelivery(name, source_file, items)
+
+
+def _createExpectedDelivery(name, source_file, items):
+    with dbhandle.atomic():
+        delivery = ExpectedDelivery.create(Name=name, SourceFile=source_file)
+        rows = [
+            {
+                "Delivery": delivery.ID,
+                "SourceRow": item["sourceRow"],
+                "Type": item["group"],
+                "ManufacturerPartNumber": item["name"],
+                "Value": item["value"],
+                "Units": item["unit"],
+                "Tolerance": item["tol"],
+                "Description": item["description"],
+                "Case": item["case"],
+                "Manufacturer": item["manufacturer"],
+                "Quantity": item["cnt"],
+                "CellNumber": item["cellnum"],
+            }
+            for item in items
+        ]
+        # Небольшие пакеты не упираются в лимит параметров SQLite в тестах
+        # и в max_allowed_packet на рабочих MySQL с большими отчетами.
+        for offset in range(0, len(rows), 75):
+            ExpectedDeliveryItem.insert_many(rows[offset:offset + 75]).execute()
+        return str(delivery.ID)
+
+
+def updateExpectedDeliveryItem(delivery_id, item_id, data):
+    with dbhandle.connection_context():
+        return _updateExpectedDeliveryItem(delivery_id, item_id, data)
+
+
+def _updateExpectedDeliveryItem(delivery_id, item_id, data):
+    with dbhandle.atomic():
+        changed = (
+            ExpectedDeliveryItem.update(
+                Type=data["group"],
+                ManufacturerPartNumber=data["name"],
+                Value=data["value"],
+                Units=data["unit"],
+                Tolerance=data["tol"],
+                Description=data["description"],
+                Case=data["case"],
+                Manufacturer=data["manufacturer"],
+                Quantity=data["cnt"],
+                CellNumber=data["cellnum"],
+            )
+            .where(
+                (ExpectedDeliveryItem.ID == item_id)
+                & (ExpectedDeliveryItem.Delivery == delivery_id)
+                & (ExpectedDeliveryItem.Delivery.in_(
+                    ExpectedDelivery.select(ExpectedDelivery.ID).where(
+                        ExpectedDelivery.Status == "pending"
+                    )
+                ))
+            )
+            .execute()
+        )
+        return changed == 1
+
+
+def updateExpectedDeliveryItems(delivery_id, items):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            delivery = ExpectedDelivery.get_or_none(
+                (ExpectedDelivery.ID == delivery_id)
+                & (ExpectedDelivery.Status == "pending")
+            )
+            if delivery is None:
+                return False
+            for item in items:
+                changed = (
+                    ExpectedDeliveryItem.update(
+                        Type=item["group"],
+                        ManufacturerPartNumber=item["name"],
+                        Value=item["value"],
+                        Units=item["unit"],
+                        Tolerance=item["tol"],
+                        Description=item["description"],
+                        Case=item["case"],
+                        Manufacturer=item["manufacturer"],
+                        Quantity=item["cnt"],
+                        CellNumber=item["cellnum"],
+                    )
+                    .where(
+                        (ExpectedDeliveryItem.ID == item["id"])
+                        & (ExpectedDeliveryItem.Delivery == delivery_id)
+                    )
+                    .execute()
+                )
+                if changed != 1:
+                    raise ValueError("Одна из позиций поставки уже удалена.")
+            return True
+
+
+def deleteExpectedDeliveryItem(delivery_id, item_id):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            changed = (
+                ExpectedDeliveryItem.delete()
+                .where(
+                    (ExpectedDeliveryItem.ID == item_id)
+                    & (ExpectedDeliveryItem.Delivery == delivery_id)
+                    & (ExpectedDeliveryItem.Delivery.in_(
+                        ExpectedDelivery.select(ExpectedDelivery.ID).where(
+                            ExpectedDelivery.Status == "pending"
+                        )
+                    ))
+                )
+                .execute()
+            )
+            return changed == 1
+
+
+def cancelExpectedDelivery(delivery_id):
+    with dbhandle.connection_context():
+        return _cancelExpectedDelivery(delivery_id)
+
+
+def _cancelExpectedDelivery(delivery_id):
+    with dbhandle.atomic():
+        changed = (
+            ExpectedDelivery.update(Status="cancelled")
+            .where(
+                (ExpectedDelivery.ID == delivery_id)
+                & (ExpectedDelivery.Status == "pending")
+            )
+            .execute()
+        )
+        return changed == 1
+
+
+def confirmExpectedDelivery(delivery_id):
+    with dbhandle.connection_context():
+        return _confirmExpectedDelivery(delivery_id)
+
+
+def _confirmExpectedDelivery(delivery_id):
+    """Apply a pending delivery to stock exactly once in one transaction."""
+    with dbhandle.atomic():
+        claimed = (
+            ExpectedDelivery.update(Status="confirming")
+            .where(
+                (ExpectedDelivery.ID == delivery_id)
+                & (ExpectedDelivery.Status == "pending")
+            )
+            .execute()
+        )
+        if claimed != 1:
+            return None
+
+        items = list(
+            ExpectedDeliveryItem.select()
+            .where(ExpectedDeliveryItem.Delivery == delivery_id)
+            .order_by(ExpectedDeliveryItem.ID)
+        )
+        if not items:
+            raise ValueError("В поставке нет позиций.")
+        created = 0
+        merged = 0
+        now = datetime.now()
+        for item in items:
+            data = {
+                "group": item.Type,
+                "name": item.ManufacturerPartNumber or "",
+                "value": item.Value or "",
+                "unit": item.Units or "",
+                "tol": item.Tolerance or "",
+                "description": item.Description or "",
+                "case": item.Case or "",
+                "manufacturer": item.Manufacturer or "",
+            }
+            existing = checkExisting(data)
+            if existing is None:
+                Component.create(
+                    Type=data["group"],
+                    ManufacturerPartNumber=data["name"],
+                    Value=data["value"],
+                    Units=data["unit"],
+                    Tolerance=data["tol"],
+                    Description=data["description"],
+                    Case=data["case"],
+                    Manufacturer=data["manufacturer"],
+                    Quantity=item.Quantity,
+                    CellNumber=item.CellNumber,
+                    ChangeDate=now,
+                )
+                created += 1
+            else:
+                existing.Quantity += item.Quantity
+                if not (existing.CellNumber or "").strip():
+                    existing.CellNumber = item.CellNumber
+                existing.ChangeDate = now
+                existing.save()
+                merged += 1
+
+        ExpectedDelivery.update(
+            Status="confirmed",
+            ConfirmedDate=now,
+        ).where(ExpectedDelivery.ID == delivery_id).execute()
+        return {"created": created, "merged": merged, "items": len(items)}
 
 # Функция отправки данных из базы
 def getData(filter):
@@ -77,8 +359,7 @@ def getData(filter):
 # Проверка существования элемента в базе
 # Необходимо вызвать dbhandle.connect() перед вызовом этой функции
 def checkExisting(data):
-    try:
-        query = Component.select().where(
+    return Component.get_or_none(
             (Component.Type == data["group"]) &
             (Component.ManufacturerPartNumber == data["name"]) &
             (Component.Value == data["value"]) &
@@ -87,10 +368,7 @@ def checkExisting(data):
             (Component.Description == data["description"]) &
             (Component.Case == data["case"]) &
             (Component.Manufacturer == data["manufacturer"])
-            ).get()
-    except:
-        query = None
-    return query
+    )
 
 
 # Добавление элемента в базу данных
@@ -182,14 +460,14 @@ def editPosition(data):
 
 # Проверка структуры БД
 try:
-    # Попытка считать данные
     dbhandle.connect()
-    query = Component.select()
-    for position in query:
-        break
+    dbhandle.create_tables(
+        [Component, ExpectedDelivery, ExpectedDeliveryItem],
+        safe=True,
+    )
     dbhandle.close()
 except:
-    dbhandle.close()
-    # Инициализация БД
+    if not dbhandle.is_closed():
+        dbhandle.close()
     dbInit()
 

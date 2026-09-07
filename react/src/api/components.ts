@@ -1,4 +1,4 @@
-import { columns, Component, ComponentForm, Operation } from '../ts/types'
+import { columns, Component, ComponentForm, ExpectedDelivery, Operation } from '../ts/types'
 import { appPath } from '../ts/urls'
 import { csrfHeaders } from './auth'
 
@@ -40,4 +40,72 @@ export async function saveComponent(operation: Operation, form: ComponentForm, i
     throw new Error('Изменения не сохранены. Возможно, позиция уже удалена. Обновите таблицу и повторите попытку.')
   }
   return result
+}
+
+
+export async function getExpectedDeliveries(signal?: AbortSignal): Promise<ExpectedDelivery[]> {
+  const response = await fetch(appPath('/deliveries'), {
+    credentials: 'same-origin', cache: 'no-store', signal,
+  })
+  await checkResponse(response)
+  const result = await response.json()
+  if (!Array.isArray(result.data)) throw new Error('Сервер вернул некорректный список поставок.')
+  return result.data as ExpectedDelivery[]
+}
+
+
+export async function importExpectedDelivery(file: File, name: string) {
+  const body = new FormData()
+  body.append('file', file)
+  if (name.trim()) body.append('name', name.trim())
+  const response = await fetch(appPath('/deliveries/import'), {
+    method: 'POST', credentials: 'same-origin', headers: csrfHeaders(), body,
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ id: string; items: number }>
+}
+
+
+export async function updateExpectedDeliveryItem(deliveryId: string, itemId: string, form: ComponentForm) {
+  const response = await fetch(appPath(`/deliveries/${deliveryId}/items/${itemId}`), {
+    method: 'PUT', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(form),
+  })
+  await checkResponse(response)
+}
+
+
+export async function updateExpectedDeliveryItems(deliveryId: string, items: Array<ComponentForm & { id: string }>) {
+  const response = await fetch(appPath(`/deliveries/${deliveryId}/items`), {
+    method: 'PUT', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  })
+  await checkResponse(response)
+}
+
+
+export async function deleteExpectedDeliveryItem(deliveryId: string, itemId: string) {
+  const response = await fetch(appPath(`/deliveries/${deliveryId}/items/${itemId}`), {
+    method: 'DELETE', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
+}
+
+
+export async function confirmExpectedDelivery(deliveryId: string) {
+  const response = await fetch(appPath(`/deliveries/${deliveryId}/confirm`), {
+    method: 'POST', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ created: number; merged: number; items: number }>
+}
+
+
+export async function cancelExpectedDelivery(deliveryId: string) {
+  const response = await fetch(appPath(`/deliveries/${deliveryId}/cancel`), {
+    method: 'POST', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
 }

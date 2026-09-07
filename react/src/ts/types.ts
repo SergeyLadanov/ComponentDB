@@ -16,6 +16,19 @@ export interface Component extends ComponentForm {
   changed: string
 }
 
+export interface ExpectedDeliveryItem extends ComponentForm {
+  id: string
+  sourceRow: number
+}
+
+export interface ExpectedDelivery {
+  id: string
+  name: string
+  sourceFile: string
+  created: string
+  items: ExpectedDeliveryItem[]
+}
+
 export type Operation = 'Add' | 'Edit' | 'Remove'
 export type ColumnKey = keyof Component
 export type ColumnFilters = Partial<Record<ColumnKey, string>>
