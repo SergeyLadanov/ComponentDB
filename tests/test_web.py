@@ -64,6 +64,23 @@ class ComponentApiTest(unittest.TestCase):
             headers=self.headers,
         )
 
+    def specification_report(self, rows=None):
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.append([
+            'Тип элемента', 'Параметры', 'Наимен. произв.',
+            'Производитель', 'Количество на устройство',
+        ])
+        for row in rows or [[
+            'Резистор', 'Значение: 10.0 кОм\nКорпус: 0603\nТочность: 1.0 %',
+            '-', '', 2,
+        ]]:
+            worksheet.append(row)
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        return output
+
     def test_auth_required_for_page_read_and_write(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 302)
@@ -335,6 +352,117 @@ class ComponentApiTest(unittest.TestCase):
         self.assertEqual(self.import_delivery(report).status_code, 201)
         items = self.client.get('/deliveries', headers=self.headers).json['data'][0]['items']
         self.assertEqual([item['unit'] for item in items], expected_units)
+
+    def test_specification_calculates_shortage_and_reacts_to_device_count(self):
+        self.post('Add', cnt='5', description='')
+        created = self.client.post(
+            '/specifications', json={'name': 'Плата управления', 'deviceQuantity': 3},
+            headers=self.headers,
+        )
+        self.assertEqual(created.status_code, 201)
+        specification_id = created.json['id']
+        added = self.client.post(
+            f'/specifications/{specification_id}/items',
+            json={'componentId': '1', 'quantityPerDevice': '2'},
+            headers=self.headers,
+        )
+        self.assertEqual(added.status_code, 201)
+        specification = self.client.get('/specifications', headers=self.headers).json['data'][0]
+        item = specification['items'][0]
+        self.assertEqual(item['requiredQuantity'], '6')
+        self.assertEqual(item['stockQuantity'], '5')
+        self.assertEqual(item['shortageQuantity'], '1')
+        self.assertEqual(item['status'], 'shortage')
+        self.assertEqual(specification['summary']['toOrder'], 1)
+
+        changed = self.client.put(
+            f'/specifications/{specification_id}',
+            json={'name': 'Плата управления', 'deviceQuantity': 2},
+            headers=self.headers,
+        )
+        self.assertEqual(changed.status_code, 200)
+        item = self.client.get('/specifications', headers=self.headers).json['data'][0]['items'][0]
+        self.assertEqual(item['requiredQuantity'], '4')
+        self.assertEqual(item['status'], 'enough')
+
+    def test_specification_import_matches_passive_parameters_and_exports_orders(self):
+        self.post('Add', cnt='3', description='')
+        response = self.client.post(
+            '/specifications/import',
+            data={
+                'name': 'Импорт BOM', 'deviceQuantity': '2',
+                'file': (self.specification_report(), 'bom.xlsx'),
+            },
+            content_type='multipart/form-data', headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        specification_id = response.json['id']
+        specification = self.client.get('/specifications', headers=self.headers).json['data'][0]
+        item = specification['items'][0]
+        self.assertEqual(item['componentId'], '1')
+        self.assertEqual(item['requiredQuantity'], '4')
+        self.assertEqual(item['shortageQuantity'], '1')
+
+        exported = self.client.get(
+            f'/specifications/{specification_id}/export', headers=self.headers,
+        )
+        self.assertEqual(exported.status_code, 200)
+        workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
+        values = list(workbook.active.values)
+        self.assertEqual(values[1][8:11], (4, 3, 1))
+        workbook.close()
+
+    def test_unmatched_specification_item_is_included_in_reorder_export(self):
+        created = self.client.post(
+            '/specifications', json={'name': 'Новая плата', 'deviceQuantity': '4'},
+            headers=self.headers,
+        )
+        specification_id = created.json['id']
+        item = {
+            'componentId': '', 'group': 'Конденсатор', 'name': '',
+            'value': '100', 'unit': 'нФ', 'tol': '10%', 'description': '',
+            'case': '0603', 'manufacturer': '', 'quantityPerDevice': '3',
+        }
+        self.assertEqual(self.client.post(
+            f'/specifications/{specification_id}/items', json=item, headers=self.headers,
+        ).status_code, 201)
+        specification = self.client.get('/specifications', headers=self.headers).json['data'][0]
+        self.assertEqual(specification['items'][0]['status'], 'unmatched')
+        self.assertEqual(specification['summary']['toOrder'], 12)
+        self.assertEqual(self.client.get(
+            f'/specifications/{specification_id}/export', headers=self.headers,
+        ).status_code, 200)
+
+    def test_unmatched_specification_is_rematched_after_stock_appears(self):
+        created = self.client.post(
+            '/specifications', json={'name': 'Старая спецификация', 'deviceQuantity': '2'},
+            headers=self.headers,
+        )
+        specification_id = created.json['id']
+        item = {
+            'componentId': '', 'group': 'Конденсатор', 'name': 'CC0603JRNPO**120',
+            'value': '12', 'unit': 'пФ', 'tol': '5%', 'description': '',
+            'case': '0603', 'manufacturer': 'Yageo', 'quantityPerDevice': '2',
+        }
+        self.client.post(
+            f'/specifications/{specification_id}/items', json=item, headers=self.headers,
+        )
+        before = self.client.get('/specifications', headers=self.headers).json['data'][0]['items'][0]
+        self.assertEqual(before['status'], 'unmatched')
+
+        self.post(
+            'Add', group='Конденсатор', name='CC0603JRNPO**120', value='12.0',
+            unit='pF', tol='5 %', description='12pF 5% 50V NP0 0603',
+            case='0603', manufacturer='Yageo', cnt='7', cellnum='',
+        )
+        # Старая ссылка может остаться после удаления и повторного добавления склада.
+        self.db.SpecificationItem.update(ComponentID=999).execute()
+        after = self.client.get('/specifications', headers=self.headers).json['data'][0]['items'][0]
+        self.assertEqual(after['componentId'], '1')
+        self.assertEqual(after['stockQuantity'], '7')
+        self.assertEqual(after['status'], 'enough')
+        stored = self.db.SpecificationItem.get_by_id(after['id'])
+        self.assertEqual(stored.ComponentID, 1)
 
 
 if __name__ == '__main__':

@@ -29,6 +29,57 @@ export interface ExpectedDelivery {
   items: ExpectedDeliveryItem[]
 }
 
+export interface SpecificationItem {
+  id: string
+  sourceRow: number | null
+  componentId: string
+  group: string
+  name: string
+  value: string
+  unit: string
+  tol: string
+  description: string
+  case: string
+  manufacturer: string
+  quantityPerDevice: string
+  requiredQuantity: string
+  totalRequiredQuantity: string
+  stockQuantity: string
+  shortageQuantity: string
+  status: 'enough' | 'shortage' | 'unmatched'
+  cellnum: string
+}
+
+export interface Specification {
+  id: string
+  name: string
+  deviceQuantity: string
+  sourceFile: string
+  created: string
+  changed: string
+  items: SpecificationItem[]
+  summary: {
+    items: number
+    enough: number
+    shortage: number
+    required: number
+    toOrder: number
+  }
+}
+
+export interface SpecificationItemForm {
+  componentId: string
+  group: string
+  name: string
+  value: string
+  unit: string
+  tol: string
+  description: string
+  case: string
+  manufacturer: string
+  quantityPerDevice: string
+}
+
 export type Operation = 'Add' | 'Edit' | 'Remove'
 export type ColumnKey = keyof Component
 export type ColumnFilters = Partial<Record<ColumnKey, string>>

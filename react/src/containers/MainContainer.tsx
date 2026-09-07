@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getExpectedDeliveries, saveComponent } from '../api/components'
+import { getExpectedDeliveries, getSpecifications, saveComponent } from '../api/components'
 import ComponentForm from '../components/ComponentForm'
 import ComponentTable from '../components/ComponentTable'
 import ExpectedDeliveries from '../components/ExpectedDeliveries'
+import Specifications from '../components/Specifications'
 import { useComponents } from '../hooks/useComponents'
 import { createComponentSearch, createSearchHighlighter } from '../ts/search'
-import { ColumnFilters, ColumnKey, columns, ComponentForm as FormData, componentTypes, emptyForm, ExpectedDelivery, Operation } from '../ts/types'
+import { ColumnFilters, ColumnKey, columns, ComponentForm as FormData, componentTypes, emptyForm, ExpectedDelivery, Operation, Specification } from '../ts/types'
 
 const compare = new Intl.Collator('ru', { numeric: true, sensitivity: 'base' })
 const normalize = (text: string) => text.toLocaleLowerCase('ru').trim()
@@ -28,6 +29,9 @@ export default function MainContainer() {
   const [deliveries, setDeliveries] = useState<ExpectedDelivery[]>([])
   const [deliveriesOpen, setDeliveriesOpen] = useState(false)
   const [deliveriesLoading, setDeliveriesLoading] = useState(false)
+  const [specifications, setSpecifications] = useState<Specification[]>([])
+  const [specificationsOpen, setSpecificationsOpen] = useState(false)
+  const [specificationsLoading, setSpecificationsLoading] = useState(false)
 
   const types = useMemo(() => Array.from(new Set([...componentTypes, ...components.map(item => item.group)])), [components])
   const highlight = useMemo(() => createSearchHighlighter(search, components.map(item => item.unit)), [search, components])
@@ -67,7 +71,7 @@ export default function MainContainer() {
     const timeout = window.setTimeout(() => setNotice(''), 3000)
     return () => window.clearTimeout(timeout)
   }, [notice])
-  useEffect(() => { void reloadDeliveries() }, [])
+  useEffect(() => { void Promise.all([reloadDeliveries(), reloadSpecifications()]) }, [])
 
   async function reloadDeliveries() {
     setDeliveriesLoading(true)
@@ -77,6 +81,16 @@ export default function MainContainer() {
       setActionError(reason instanceof Error ? reason.message : 'Не удалось загрузить ожидаемые поставки.')
     } finally {
       setDeliveriesLoading(false)
+    }
+  }
+  async function reloadSpecifications() {
+    setSpecificationsLoading(true)
+    try {
+      setSpecifications(await getSpecifications())
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : 'Не удалось загрузить спецификации.')
+    } finally {
+      setSpecificationsLoading(false)
     }
   }
   function openForm(editing: boolean, component = selected) {
@@ -134,9 +148,14 @@ export default function MainContainer() {
   return <main className="app-main">
     <div className="page-heading">
       <div><h1>Учет компонентов</h1></div>
-      <button className="btn btn-outline-primary deliveries-button" onClick={() => { setDeliveriesOpen(true); void reloadDeliveries() }}>
-        Ожидаемые поставки <span>{deliveries.length}</span>
-      </button>
+      <div className="page-actions">
+        <button className="btn btn-outline-primary deliveries-button" onClick={() => { setSpecificationsOpen(true); void reloadSpecifications() }}>
+          Спецификации <span>{specifications.length}</span>
+        </button>
+        <button className="btn btn-outline-primary deliveries-button" onClick={() => { setDeliveriesOpen(true); void reloadDeliveries() }}>
+          Ожидаемые поставки <span>{deliveries.length}</span>
+        </button>
+      </div>
     </div>
 
     <section className="summary-grid" aria-label="Статистика склада">
@@ -162,6 +181,7 @@ export default function MainContainer() {
           <button className="btn btn-sm btn-primary add-button" disabled={disabled} onClick={() => openForm(false)}><span aria-hidden="true">＋</span> Добавить позицию</button>
           <button className="btn btn-sm btn-outline-secondary" disabled={!selected || disabled} onClick={() => openForm(true)}>Редактировать</button>
           <button className="btn btn-sm btn-outline-danger" disabled={!selected || disabled} onClick={remove}>Удалить</button>
+          <button className="btn btn-sm btn-outline-primary" disabled={!selected || disabled} onClick={() => { setSpecificationsOpen(true); void reloadSpecifications() }}>В спецификацию</button>
           <div className="write-off-controls">
             <select className="form-select form-select-sm" aria-label="Количество для списания" value={subtract} disabled={!selected || disabled} onChange={event => setSubtract(event.target.value)}>{Array.from({ length: 10 }, (_, i) => i + 1).map(value => <option key={value}>{value}</option>)}</select><span>шт.</span>
             <button className="btn btn-sm btn-outline-secondary" disabled={!selected || disabled || Number(selected.cnt) === 0} onClick={writeOff}>Списать</button>
@@ -186,5 +206,6 @@ export default function MainContainer() {
     <p className="table-hint">Двойной щелчок по строке — редактирование. «Добавить позицию» при выбранной строке — добавление по образцу.</p>
     {modal && <ComponentForm initial={modal.initial} editing={modal.editing} busy={busy} error={actionError} onClose={() => { setModal(null); setActionError('') }} onSubmit={form => mutate(modal.editing ? 'Edit' : 'Add', form, modal.id)} />}
     {deliveriesOpen && <ExpectedDeliveries deliveries={deliveries} loading={deliveriesLoading} onClose={() => setDeliveriesOpen(false)} onReload={reloadDeliveries} onConfirmed={showConfirmedDelivery} onNotice={setNotice} />}
+    {specificationsOpen && <Specifications specifications={specifications} components={components} selectedComponent={selected} loading={specificationsLoading} onClose={() => setSpecificationsOpen(false)} onReload={reloadSpecifications} onNotice={setNotice} />}
   </main>
 }

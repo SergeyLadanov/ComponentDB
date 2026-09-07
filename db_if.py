@@ -1,6 +1,7 @@
 import peewee
 from peewee import *
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 import json
 from config import DB_USER
 from config import DB_PSWD
@@ -66,11 +67,40 @@ class ExpectedDeliveryItem(BaseModel):
     CellNumber = CharField(null=False, default="")
 
 
+class Specification(BaseModel):
+    ID = BigAutoField()
+    Name = CharField(null=False)
+    DeviceQuantity = BigIntegerField(null=False, default=1)
+    SourceFile = CharField(null=False, default="")
+    CreatedDate = DateTimeField(default=datetime.now)
+    ChangeDate = DateTimeField(default=datetime.now)
+
+
+class SpecificationItem(BaseModel):
+    ID = BigAutoField()
+    Specification = ForeignKeyField(
+        Specification,
+        backref="items",
+        on_delete="CASCADE",
+    )
+    SourceRow = IntegerField(null=True)
+    ComponentID = BigIntegerField(null=True)
+    Type = CharField(null=False)
+    ManufacturerPartNumber = CharField(null=True, default="")
+    Value = CharField(null=True, default="")
+    Units = CharField(null=True, default="")
+    Tolerance = CharField(null=True, default="")
+    Description = CharField(null=True, default="")
+    Case = CharField(null=True, default="")
+    Manufacturer = CharField(null=True, default="")
+    QuantityPerDevice = BigIntegerField(null=False, default=1)
+
+
 # Функция инициализации базы данных
 def dbInit():
     dbhandle.connect()
     dbhandle.create_tables(
-        [Component, ExpectedDelivery, ExpectedDeliveryItem],
+        [Component, ExpectedDelivery, ExpectedDeliveryItem, Specification, SpecificationItem],
         safe=True,
     )
     dbhandle.close()
@@ -325,6 +355,307 @@ def _confirmExpectedDelivery(delivery_id):
         ).where(ExpectedDelivery.ID == delivery_id).execute()
         return {"created": created, "merged": merged, "items": len(items)}
 
+
+def _component_snapshot(component):
+    return {
+        "group": component.Type,
+        "name": component.ManufacturerPartNumber or "",
+        "value": component.Value or "",
+        "unit": component.Units or "",
+        "tol": component.Tolerance or "",
+        "description": component.Description or "",
+        "case": component.Case or "",
+        "manufacturer": component.Manufacturer or "",
+    }
+
+
+def _normalized_spec_value(key, value):
+    text = " ".join(str(value or "").replace("\u00a0", " ").split()).casefold()
+    if key == "value":
+        try:
+            return format(Decimal(text.replace(",", ".")).normalize(), "f")
+        except InvalidOperation:
+            return text
+    if key == "tol":
+        compact = text.replace(" ", "")
+        number = compact[:-1] if compact.endswith("%") else compact
+        try:
+            normalized = format(Decimal(number.replace(",", ".")).normalize(), "f")
+            return normalized + ("%" if compact.endswith("%") else "")
+        except InvalidOperation:
+            return compact
+    if key == "unit":
+        compact = text.replace(" ", "").replace("µ", "u").replace("μ", "u")
+        aliases = {
+            "pf": "пф", "nf": "нф", "uf": "мкф", "mf": "мф",
+            "ohm": "ом", "kohm": "ком", "mohm": "мом",
+            "uh": "мкгн", "nh": "нгн", "mh": "мгн", "h": "гн",
+        }
+        return aliases.get(compact, compact)
+    return text
+
+
+def _match_specification_item(data, components):
+    component_id = data.get("componentId")
+    if component_id is not None:
+        return next((item for item in components if item.ID == int(component_id)), None)
+
+    meaningful = lambda value: str(value or "").strip().casefold() not in ("", "-")
+    keys = (
+        ("group", "Type"), ("name", "ManufacturerPartNumber"),
+        ("value", "Value"), ("unit", "Units"), ("tol", "Tolerance"),
+        ("case", "Case"), ("manufacturer", "Manufacturer"),
+    )
+    filters = [(key, field) for key, field in keys if meaningful(data.get(key))]
+    if not meaningful(data.get("group")) or not any(key in ("name", "value", "case") for key, _ in filters):
+        return None
+    matches = [
+        component for component in components
+        if all(_normalized_spec_value(key, getattr(component, field)) == _normalized_spec_value(key, data[key])
+               for key, field in filters)
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    passive_types = {"резистор", "конденсатор", "катушка индуктивности"}
+    if (not matches and str(data.get("group") or "").strip().casefold() in passive_types
+            and meaningful(data.get("value")) and meaningful(data.get("unit"))):
+        parameter_keys = {"group", "value", "unit", "tol", "case"}
+        parameter_filters = [(key, field) for key, field in filters if key in parameter_keys]
+        matches = [
+            component for component in components
+            if all(_normalized_spec_value(key, getattr(component, field)) == _normalized_spec_value(key, data[key])
+                   for key, field in parameter_filters)
+        ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _rematch_specification_items(items, components):
+    """Attach old/unmatched BOM rows when a single current stock match exists."""
+    component_list = list(components.values()) if isinstance(components, dict) else list(components)
+    component_ids = {component.ID for component in component_list}
+    for item in items:
+        if item.ComponentID in component_ids:
+            continue
+        component = _match_specification_item({
+            "componentId": None,
+            "group": item.Type,
+            "name": item.ManufacturerPartNumber or "",
+            "value": item.Value or "",
+            "unit": item.Units or "",
+            "tol": item.Tolerance or "",
+            "description": item.Description or "",
+            "case": item.Case or "",
+            "manufacturer": item.Manufacturer or "",
+        }, component_list)
+        if component is not None:
+            SpecificationItem.update(ComponentID=component.ID).where(
+                SpecificationItem.ID == item.ID
+            ).execute()
+            item.ComponentID = component.ID
+
+
+def _spec_item_values(data, components):
+    component = _match_specification_item(data, components)
+    values = _component_snapshot(component) if component is not None else {
+        key: str(data.get(key) or "")
+        for key in ("group", "name", "value", "unit", "tol", "description", "case", "manufacturer")
+    }
+    return {
+        "ComponentID": component.ID if component is not None else None,
+        "Type": values["group"] or "Прочее",
+        "ManufacturerPartNumber": values["name"],
+        "Value": values["value"],
+        "Units": values["unit"],
+        "Tolerance": values["tol"],
+        "Description": values["description"],
+        "Case": values["case"],
+        "Manufacturer": values["manufacturer"],
+        "QuantityPerDevice": data["quantityPerDevice"],
+    }
+
+
+def getSpecifications():
+    with dbhandle.connection_context():
+        components = {item.ID: item for item in Component.select()}
+        specifications = Specification.select().order_by(Specification.ChangeDate.desc(), Specification.ID.desc())
+        result = []
+        for specification in specifications:
+            items = list(specification.items.order_by(SpecificationItem.ID))
+            _rematch_specification_items(items, components)
+            demand_by_component = {}
+            for item in items:
+                if item.ComponentID in components:
+                    demand_by_component[item.ComponentID] = demand_by_component.get(item.ComponentID, 0) + item.QuantityPerDevice * specification.DeviceQuantity
+            output_items = []
+            for item in items:
+                component = components.get(item.ComponentID)
+                display = _component_snapshot(component) if component is not None else {
+                    "group": item.Type, "name": item.ManufacturerPartNumber or "",
+                    "value": item.Value or "", "unit": item.Units or "",
+                    "tol": item.Tolerance or "", "description": item.Description or "",
+                    "case": item.Case or "", "manufacturer": item.Manufacturer or "",
+                }
+                required = item.QuantityPerDevice * specification.DeviceQuantity
+                total_required = demand_by_component.get(item.ComponentID, required)
+                available = component.Quantity if component is not None else 0
+                shortage = max(0, total_required - available)
+                output_items.append({
+                    "id": str(item.ID),
+                    "sourceRow": item.SourceRow,
+                    "componentId": str(component.ID) if component is not None else "",
+                    "group": display["group"],
+                    "name": display["name"],
+                    "value": display["value"],
+                    "unit": display["unit"],
+                    "tol": display["tol"],
+                    "description": display["description"],
+                    "case": display["case"],
+                    "manufacturer": display["manufacturer"],
+                    "quantityPerDevice": str(item.QuantityPerDevice),
+                    "requiredQuantity": str(required),
+                    "totalRequiredQuantity": str(total_required),
+                    "stockQuantity": str(available),
+                    "shortageQuantity": str(shortage),
+                    "status": "unmatched" if component is None else ("shortage" if shortage else "enough"),
+                    "cellnum": component.CellNumber if component is not None else "",
+                })
+            order_rows = buildSpecificationOrderRows(specification, items, components, False)
+            result.append({
+                "id": str(specification.ID),
+                "name": specification.Name,
+                "deviceQuantity": str(specification.DeviceQuantity),
+                "sourceFile": specification.SourceFile or "",
+                "created": str(specification.CreatedDate).split('.')[0],
+                "changed": str(specification.ChangeDate).split('.')[0],
+                "items": output_items,
+                "summary": {
+                    "items": len(items),
+                    "enough": sum(1 for item in output_items if item["status"] == "enough"),
+                    "shortage": len(order_rows),
+                    "required": sum(item.QuantityPerDevice * specification.DeviceQuantity for item in items),
+                    "toOrder": sum(row["toOrder"] for row in order_rows),
+                },
+            })
+        return result
+
+
+def createSpecification(name, device_quantity, source_file="", items=None):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            specification = Specification.create(
+                Name=name, DeviceQuantity=device_quantity, SourceFile=source_file,
+            )
+            if items:
+                components = list(Component.select())
+                for item in items:
+                    values = _spec_item_values(item, components)
+                    SpecificationItem.create(
+                        Specification=specification.ID,
+                        SourceRow=item.get("sourceRow"),
+                        **values,
+                    )
+            return str(specification.ID)
+
+
+def updateSpecification(specification_id, name, device_quantity):
+    with dbhandle.connection_context():
+        changed = (Specification.update(
+            Name=name, DeviceQuantity=device_quantity, ChangeDate=datetime.now(),
+        ).where(Specification.ID == specification_id).execute())
+        return changed == 1
+
+
+def deleteSpecification(specification_id):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            if Specification.get_or_none(Specification.ID == specification_id) is None:
+                return False
+            SpecificationItem.delete().where(
+                SpecificationItem.Specification == specification_id
+            ).execute()
+            return Specification.delete().where(Specification.ID == specification_id).execute() == 1
+
+
+def addSpecificationItem(specification_id, data):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            specification = Specification.get_or_none(Specification.ID == specification_id)
+            if specification is None:
+                return None
+            values = _spec_item_values(data, list(Component.select()))
+            item = SpecificationItem.create(Specification=specification_id, **values)
+            Specification.update(ChangeDate=datetime.now()).where(Specification.ID == specification_id).execute()
+            return str(item.ID)
+
+
+def updateSpecificationItem(specification_id, item_id, data):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            values = _spec_item_values(data, list(Component.select()))
+            changed = (SpecificationItem.update(**values).where(
+                (SpecificationItem.ID == item_id) &
+                (SpecificationItem.Specification == specification_id)
+            ).execute())
+            if changed:
+                Specification.update(ChangeDate=datetime.now()).where(Specification.ID == specification_id).execute()
+            return changed == 1
+
+
+def deleteSpecificationItem(specification_id, item_id):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            changed = (SpecificationItem.delete().where(
+                (SpecificationItem.ID == item_id) &
+                (SpecificationItem.Specification == specification_id)
+            ).execute())
+            if changed:
+                Specification.update(ChangeDate=datetime.now()).where(Specification.ID == specification_id).execute()
+            return changed == 1
+
+
+def buildSpecificationOrderRows(specification, items, components, include_all=False):
+    grouped = {}
+    for item in items:
+        component = components.get(item.ComponentID) if isinstance(components, dict) else None
+        display = _component_snapshot(component) if component is not None else {
+            "group": item.Type, "name": item.ManufacturerPartNumber or "",
+            "value": item.Value or "", "unit": item.Units or "",
+            "tol": item.Tolerance or "", "description": item.Description or "",
+            "case": item.Case or "", "manufacturer": item.Manufacturer or "",
+        }
+        key = ("component", item.ComponentID) if component is not None else (
+            "parameters", item.Type, item.ManufacturerPartNumber, item.Value,
+            item.Units, item.Tolerance, item.Case, item.Manufacturer,
+        )
+        row = grouped.setdefault(key, {
+            "componentId": str(component.ID) if component is not None else "",
+            "group": display["group"], "name": display["name"],
+            "value": display["value"], "unit": display["unit"],
+            "tol": display["tol"], "case": display["case"],
+            "manufacturer": display["manufacturer"],
+            "required": 0, "stock": component.Quantity if component is not None else 0,
+            "cellnum": component.CellNumber if component is not None else "",
+            "matched": component is not None,
+        })
+        row["required"] += item.QuantityPerDevice * specification.DeviceQuantity
+    result = []
+    for row in grouped.values():
+        row["toOrder"] = max(0, row["required"] - row["stock"])
+        if include_all or row["toOrder"] > 0:
+            result.append(row)
+    return result
+
+
+def getSpecificationForExport(specification_id, include_all=False):
+    with dbhandle.connection_context():
+        specification = Specification.get_or_none(Specification.ID == specification_id)
+        if specification is None:
+            return None
+        items = list(specification.items.order_by(SpecificationItem.ID))
+        components = {item.ID: item for item in Component.select()}
+        _rematch_specification_items(items, components)
+        return specification, buildSpecificationOrderRows(specification, items, components, include_all)
+
 # Функция отправки данных из базы
 def getData(filter):
     dbhandle.connect()
@@ -462,7 +793,7 @@ def editPosition(data):
 try:
     dbhandle.connect()
     dbhandle.create_tables(
-        [Component, ExpectedDelivery, ExpectedDeliveryItem],
+        [Component, ExpectedDelivery, ExpectedDeliveryItem, Specification, SpecificationItem],
         safe=True,
     )
     dbhandle.close()

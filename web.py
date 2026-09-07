@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session, url_for, send_file
 from datetime import timedelta
 from functools import wraps
+from io import BytesIO
 import os
 from pathlib import Path
 import secrets
+from urllib.parse import quote
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.exceptions import RequestEntityTooLarge
 from delivery_import import DeliveryImportError, parse_delivery_workbook
+from specification_import import SpecificationImportError, parse_specification_workbook
 
 
 # Текущий путь приложения
@@ -122,7 +127,7 @@ def prevent_private_caching(response):
 
 @app.errorhandler(RequestEntityTooLarge)
 def upload_too_large(_error):
-    return {'error': 'Размер Excel-отчёта не должен превышать 5 МБ.'}, 413
+    return {'error': 'Размер Excel-файла не должен превышать 5 МБ.'}, 413
 
 
 @app.route('/auth/session')
@@ -203,6 +208,175 @@ def validate_component_data(data, positive_quantity=False):
         if len(result[key]) > 255:
             raise ValueError('Значение поля не должно превышать 255 символов.')
     return result
+
+
+def validate_specification_header(data):
+    if not isinstance(data, dict):
+        raise ValueError('Некорректные данные спецификации.')
+    name = str(data.get('name') or '').strip()
+    if not name:
+        raise ValueError('Укажите название спецификации.')
+    if len(name) > 255:
+        raise ValueError('Название спецификации длиннее 255 символов.')
+    device_quantity = str(data.get('deviceQuantity') or '')
+    if (not device_quantity.isascii() or not device_quantity.isdigit()
+            or len(device_quantity) > 16 or int(device_quantity) <= 0
+            or int(device_quantity) > 9007199254740991):
+        raise ValueError('Количество устройств должно быть целым положительным числом.')
+    return name, int(device_quantity)
+
+
+def validate_specification_item(data):
+    if not isinstance(data, dict):
+        raise ValueError('Некорректные данные позиции спецификации.')
+    quantity = str(data.get('quantityPerDevice') or '')
+    if (not quantity.isascii() or not quantity.isdigit() or len(quantity) > 16
+            or int(quantity) <= 0 or int(quantity) > 9007199254740991):
+        raise ValueError('Количество на устройство должно быть целым положительным числом.')
+    component_id = data.get('componentId')
+    component_id = positive_id(component_id, 'компонента') if str(component_id or '').strip() else None
+    result = {'componentId': component_id, 'quantityPerDevice': int(quantity)}
+    for key in ('group', 'name', 'value', 'unit', 'tol', 'description', 'case', 'manufacturer'):
+        result[key] = str(data.get(key) or '').strip()
+        if len(result[key]) > 255:
+            raise ValueError('Значение поля не должно превышать 255 символов.')
+    if component_id is None and not result['group']:
+        raise ValueError('Укажите классификацию или ID складского компонента.')
+    return result
+
+
+@app.route('/specifications', methods=['GET', 'POST'])
+@auth_required
+def specifications():
+    if request.method == 'GET':
+        return {'data': db_if.getSpecifications()}
+    try:
+        name, quantity = validate_specification_header(request.get_json(silent=True))
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    return {'id': db_if.createSpecification(name, quantity)}, 201
+
+
+@app.route('/specifications/import', methods=['POST'])
+@auth_required
+def import_specification():
+    upload = request.files.get('file')
+    if upload is None or not upload.filename:
+        return {'error': 'Выберите Excel-файл спецификации.'}, 400
+    source_file = upload.filename.replace('\\', '/').rsplit('/', 1)[-1]
+    try:
+        name, quantity = validate_specification_header({
+            'name': request.form.get('name') or Path(source_file).stem,
+            'deviceQuantity': request.form.get('deviceQuantity') or '1',
+        })
+        if len(source_file) > 255:
+            raise ValueError('Имя файла длиннее 255 символов.')
+        items = parse_specification_workbook(upload.stream, source_file)
+    except (ValueError, SpecificationImportError) as error:
+        return {'error': str(error)}, 400
+    specification_id = db_if.createSpecification(name, quantity, source_file, items)
+    return {'id': specification_id, 'items': len(items)}, 201
+
+
+@app.route('/specifications/<specification_id>', methods=['PUT', 'DELETE'])
+@auth_required
+def specification_detail(specification_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+        if request.method == 'DELETE':
+            if not db_if.deleteSpecification(specification_id):
+                return {'error': 'Спецификация не найдена.'}, 404
+            return {'ok': True}
+        name, quantity = validate_specification_header(request.get_json(silent=True))
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    if not db_if.updateSpecification(specification_id, name, quantity):
+        return {'error': 'Спецификация не найдена.'}, 404
+    return {'ok': True}
+
+
+@app.route('/specifications/<specification_id>/items', methods=['POST'])
+@auth_required
+def specification_items(specification_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+        data = validate_specification_item(request.get_json(silent=True))
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    item_id = db_if.addSpecificationItem(specification_id, data)
+    if item_id is None:
+        return {'error': 'Спецификация не найдена.'}, 404
+    return {'id': item_id}, 201
+
+
+@app.route('/specifications/<specification_id>/items/<item_id>', methods=['PUT', 'DELETE'])
+@auth_required
+def specification_item(specification_id, item_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+        item_id = positive_id(item_id, 'позиции')
+        if request.method == 'DELETE':
+            if not db_if.deleteSpecificationItem(specification_id, item_id):
+                return {'error': 'Позиция спецификации не найдена.'}, 404
+            return {'ok': True}
+        data = validate_specification_item(request.get_json(silent=True))
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    if not db_if.updateSpecificationItem(specification_id, item_id, data):
+        return {'error': 'Позиция спецификации не найдена.'}, 404
+    return {'ok': True}
+
+
+@app.route('/specifications/<specification_id>/export', methods=['GET'])
+@auth_required
+def export_specification(specification_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    include_all = request.args.get('scope') == 'all'
+    export_data = db_if.getSpecificationForExport(specification_id, include_all)
+    if export_data is None:
+        return {'error': 'Спецификация не найдена.'}, 404
+    specification, rows = export_data
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = 'Дозаказ' if not include_all else 'Потребность'
+    headers = [
+        'ID компонента', 'Классификация', 'Наименование', 'Значение', 'Ед. изм.',
+        'Точность', 'Корпус', 'Производитель', 'Требуется', 'На складе',
+        'К дозаказу', 'Ячейка', 'Сопоставлено',
+    ]
+    sheet.append(headers)
+    for cell in sheet[1]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='18746C')
+    for row in rows:
+        sheet.append([
+            row['componentId'], row['group'], row['name'], row['value'], row['unit'],
+            row['tol'], row['case'], row['manufacturer'], row['required'], row['stock'],
+            row['toOrder'], row['cellnum'], 'Да' if row['matched'] else 'Нет',
+        ])
+    sheet.freeze_panes = 'A2'
+    sheet.auto_filter.ref = sheet.dimensions
+    widths = [15, 24, 28, 12, 12, 12, 14, 22, 12, 12, 14, 14, 15]
+    for index, width in enumerate(widths, start=1):
+        sheet.column_dimensions[chr(64 + index)].width = width
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    suffix = 'вся-потребность' if include_all else 'дозаказ'
+    filename = f'{specification.Name}-{suffix}.xlsx'
+    response = send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='specification.xlsx',
+    )
+    response.headers['Content-Disposition'] = (
+        f"attachment; filename=specification.xlsx; filename*=UTF-8''{quote(filename)}"
+    )
+    return response
 
 
 @app.route('/deliveries', methods=['GET'])

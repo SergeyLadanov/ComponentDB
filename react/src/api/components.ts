@@ -1,4 +1,4 @@
-import { columns, Component, ComponentForm, ExpectedDelivery, Operation } from '../ts/types'
+import { columns, Component, ComponentForm, ExpectedDelivery, Operation, Specification, SpecificationItemForm } from '../ts/types'
 import { appPath } from '../ts/urls'
 import { csrfHeaders } from './auth'
 
@@ -108,4 +108,89 @@ export async function cancelExpectedDelivery(deliveryId: string) {
     method: 'POST', credentials: 'same-origin', headers: csrfHeaders(),
   })
   await checkResponse(response)
+}
+
+
+export async function getSpecifications(signal?: AbortSignal): Promise<Specification[]> {
+  const response = await fetch(appPath('/specifications'), {
+    credentials: 'same-origin', cache: 'no-store', signal,
+  })
+  await checkResponse(response)
+  const result = await response.json()
+  if (!Array.isArray(result.data)) throw new Error('Сервер вернул некорректный список спецификаций.')
+  return result.data as Specification[]
+}
+
+
+export async function createSpecification(name: string, deviceQuantity: string) {
+  const response = await fetch(appPath('/specifications'), {
+    method: 'POST', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, deviceQuantity }),
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ id: string }>
+}
+
+
+export async function importSpecification(file: File, name: string, deviceQuantity: string) {
+  const body = new FormData()
+  body.append('file', file)
+  body.append('name', name)
+  body.append('deviceQuantity', deviceQuantity)
+  const response = await fetch(appPath('/specifications/import'), {
+    method: 'POST', credentials: 'same-origin', headers: csrfHeaders(), body,
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ id: string; items: number }>
+}
+
+
+export async function updateSpecification(id: string, name: string, deviceQuantity: string) {
+  const response = await fetch(appPath(`/specifications/${id}`), {
+    method: 'PUT', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, deviceQuantity }),
+  })
+  await checkResponse(response)
+}
+
+
+export async function deleteSpecification(id: string) {
+  const response = await fetch(appPath(`/specifications/${id}`), {
+    method: 'DELETE', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
+}
+
+
+export async function addSpecificationItem(specificationId: string, item: SpecificationItemForm) {
+  const response = await fetch(appPath(`/specifications/${specificationId}/items`), {
+    method: 'POST', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(item),
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ id: string }>
+}
+
+
+export async function updateSpecificationItem(specificationId: string, itemId: string, item: SpecificationItemForm) {
+  const response = await fetch(appPath(`/specifications/${specificationId}/items/${itemId}`), {
+    method: 'PUT', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(item),
+  })
+  await checkResponse(response)
+}
+
+
+export async function deleteSpecificationItem(specificationId: string, itemId: string) {
+  const response = await fetch(appPath(`/specifications/${specificationId}/items/${itemId}`), {
+    method: 'DELETE', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
+}
+
+
+export function specificationExportUrl(specificationId: string, scope: 'missing' | 'all') {
+  return appPath(`/specifications/${specificationId}/export?scope=${scope}`)
 }

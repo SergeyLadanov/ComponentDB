@@ -88,7 +88,7 @@ def _number_text(value):
         number = Decimal(value.replace(",", "."))
     except InvalidOperation:
         return value
-    normalized = format(number, "f").rstrip("0").rstrip(".")
+    normalized = format(number.normalize(), "f")
     return normalized or "0"
 
 
