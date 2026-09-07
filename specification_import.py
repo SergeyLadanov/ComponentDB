@@ -1,5 +1,6 @@
 """Import a device specification from a regular or PCB BOM Parser workbook."""
 from pathlib import Path
+import re
 from zipfile import BadZipFile
 
 from openpyxl import load_workbook
@@ -41,6 +42,71 @@ HEADER_ALIASES = {
     "qty": "quantity",
 }
 
+UNIT_ALIASES = {
+    "pf": "пФ", "пф": "пФ",
+    "nf": "нФ", "нф": "нФ",
+    "uf": "мкФ", "µf": "мкФ", "μf": "мкФ", "мкф": "мкФ",
+    "mf": "мФ", "мф": "мФ", "f": "Ф", "ф": "Ф",
+    "ohm": "Ом", "ω": "Ом", "ом": "Ом",
+    "kohm": "кОм", "kω": "кОм", "ком": "кОм",
+    "mohm": "МОм", "mω": "МОм", "мом": "МОм",
+    "nh": "нГн", "нгн": "нГн", "uh": "мкГн", "µh": "мкГн",
+    "μh": "мкГн", "мкгн": "мкГн", "mh": "мГн", "мгн": "мГн",
+    "h": "Гн", "гн": "Гн",
+}
+
+
+def _canonical_unit(value):
+    text = _meaningful(value).replace(" ", "")
+    return UNIT_ALIASES.get(text.casefold(), _translate_unit(text))
+
+
+def _compact_parameters(source_name):
+    """Recognize passives in compact BOM strings such as 12pF or 10k."""
+    text = " ".join(_text(source_name).split())
+    result = {"group": "", "value": "", "unit": "", "tol": "", "case": ""}
+    tolerance = re.search(r"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*%", text)
+    if tolerance:
+        result["tol"] = f"{_number_text(tolerance.group(1))}%"
+    case_matches = re.findall(r"(?<!\w)(0201|0402|0603|0805|1206|1210|1812)(?!\w)", text, re.IGNORECASE)
+    case_letter = re.search(r"\bCase\s+([A-E])\b", text, re.IGNORECASE)
+    if case_matches:
+        result["case"] = case_matches[-1].upper()
+    elif case_letter:
+        result["case"] = case_letter.group(1).upper()
+
+    capacitor = re.match(
+        r"^(\d+(?:[.,]\d+)?)\s*(pF|nF|uF|µF|μF|mF|F|пФ|нФ|мкФ|мФ|Ф)\b",
+        text, re.IGNORECASE,
+    )
+    if capacitor:
+        result.update(group="Конденсатор", value=_number_text(capacitor.group(1)),
+                      unit=_canonical_unit(capacitor.group(2)))
+        return result
+
+    inductance = re.match(
+        r"^(\d+(?:[.,]\d+)?)\s*(nH|uH|µH|μH|mH|H|нГн|мкГн|мГн|Гн)\b",
+        text, re.IGNORECASE,
+    )
+    if inductance:
+        result.update(group="Катушка индуктивности", value=_number_text(inductance.group(1)),
+                      unit=_canonical_unit(inductance.group(2)))
+        return result
+
+    # A bare resistance value is accepted only when the rest of the string looks
+    # like a resistor: tolerance plus power rating prevent false positives.
+    if tolerance and re.search(r"\b\d+(?:[.,]\d+)?\s*(?:m?W|Вт|мВт)\b", text, re.IGNORECASE):
+        resistance = re.match(
+            r"^(\d+(?:[.,]\d+)?)\s*(kOhm|MOhm|Ohm|кОм|МОм|Ом|[kKmM])?\b",
+            text,
+        )
+        if resistance:
+            suffix = resistance.group(2) or "Ом"
+            suffix_units = {"k": "кОм", "K": "кОм", "M": "МОм", "m": "мОм"}
+            result.update(group="Резистор", value=_number_text(resistance.group(1)),
+                          unit=suffix_units.get(suffix, _canonical_unit(suffix)))
+    return result
+
 
 def parse_specification_workbook(file_stream, filename):
     if Path(filename or "").suffix.lower() != ".xlsx":
@@ -60,6 +126,11 @@ def parse_specification_workbook(file_stream, filename):
             key = HEADER_ALIASES.get(_text(value).lower())
             if key and key not in columns:
                 columns[key] = index
+        # Compact three-column BOMs are also accepted positionally. Some older
+        # generators wrote mojibake headers, while the row data stayed intact.
+        if len(header) >= 3 and _text(header[0]) == "#":
+            columns.setdefault("source_name", 1)
+            columns.setdefault("quantity", 2)
         if "quantity" not in columns:
             raise SpecificationImportError(
                 "В файле должен быть столбец «Количество на устройство» или «Количество»."
@@ -89,12 +160,14 @@ def parse_specification_workbook(file_stream, filename):
                 raise SpecificationImportError(f"Строка {row_number}: некорректный ID компонента.")
             parameters = _parse_parameters(cell("parameters"))
             source_name = _meaningful(cell("source_name"))
+            compact = _compact_parameters(source_name)
             name = _meaningful(cell("name")) or source_name
-            group = TYPE_ALIASES.get(_meaningful(cell("group")) or "Прочее", _meaningful(cell("group")) or "Прочее")
-            value = _meaningful(cell("value")) or parameters["value"]
-            unit = _translate_unit(_meaningful(cell("unit"))) if _meaningful(cell("unit")) else parameters["unit"]
-            tol = _meaningful(cell("tol")) or parameters["tol"]
-            case = _meaningful(cell("case")) or parameters["case"]
+            source_group = _meaningful(cell("group")) or compact["group"] or "Прочее"
+            group = TYPE_ALIASES.get(source_group, source_group)
+            value = _meaningful(cell("value")) or parameters["value"] or compact["value"]
+            unit = _canonical_unit(cell("unit")) if _meaningful(cell("unit")) else (parameters["unit"] or compact["unit"])
+            tol = _meaningful(cell("tol")) or parameters["tol"] or compact["tol"]
+            case = _meaningful(cell("case")) or parameters["case"] or compact["case"]
             if not component_id and not any((name, value, case)):
                 raise SpecificationImportError(f"Строка {row_number}: недостаточно данных для сопоставления позиции.")
             item = {
@@ -105,7 +178,7 @@ def parse_specification_workbook(file_stream, filename):
                 "value": _limited(_number_text(value) if value else "", row_number, "Значение"),
                 "unit": _limited(unit, row_number, "Единицы измерения"),
                 "tol": _limited(tol, row_number, "Точность"),
-                "description": _limited(_meaningful(cell("description")), row_number, "Описание"),
+                "description": _limited(_meaningful(cell("description")) or (source_name if compact["group"] else ""), row_number, "Описание"),
                 "case": _limited(case, row_number, "Корпус"),
                 "manufacturer": _limited(_meaningful(cell("manufacturer")), row_number, "Производитель"),
                 "quantityPerDevice": quantity,

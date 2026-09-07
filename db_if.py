@@ -395,6 +395,59 @@ def _normalized_spec_value(key, value):
     return text
 
 
+def _normalized_measure(value, unit):
+    try:
+        number = Decimal(str(value or "").strip().replace(",", "."))
+    except InvalidOperation:
+        return None
+    raw_unit = str(unit or "").replace(" ", "").replace("µ", "u").replace("μ", "u")
+    units = {
+        "F": ("capacitance", "1"), "mF": ("capacitance", "1e-3"),
+        "uF": ("capacitance", "1e-6"), "nF": ("capacitance", "1e-9"),
+        "pF": ("capacitance", "1e-12"),
+        "Ф": ("capacitance", "1"), "мФ": ("capacitance", "1e-3"),
+        "мкФ": ("capacitance", "1e-6"), "нФ": ("capacitance", "1e-9"),
+        "пФ": ("capacitance", "1e-12"),
+        "Ohm": ("resistance", "1"), "kOhm": ("resistance", "1e3"),
+        "MOhm": ("resistance", "1e6"), "Ом": ("resistance", "1"),
+        "кОм": ("resistance", "1e3"), "МОм": ("resistance", "1e6"),
+        "мОм": ("resistance", "1e-3"),
+        "H": ("inductance", "1"), "mH": ("inductance", "1e-3"),
+        "uH": ("inductance", "1e-6"), "nH": ("inductance", "1e-9"),
+        "Гн": ("inductance", "1"), "мГн": ("inductance", "1e-3"),
+        "мкГн": ("inductance", "1e-6"), "нГн": ("inductance", "1e-9"),
+    }
+    description = units.get(raw_unit)
+    if description is None:
+        insensitive = {
+            "f": ("capacitance", "1"), "pf": ("capacitance", "1e-12"),
+            "nf": ("capacitance", "1e-9"), "uf": ("capacitance", "1e-6"),
+            "ohm": ("resistance", "1"), "kohm": ("resistance", "1e3"),
+            "h": ("inductance", "1"), "uh": ("inductance", "1e-6"),
+            "nh": ("inductance", "1e-9"),
+        }
+        description = insensitive.get(raw_unit.casefold())
+    if description is None:
+        return None
+    dimension, multiplier = description
+    return dimension, number * Decimal(multiplier)
+
+
+def _specification_fields_match(component, data, filters):
+    keys = {key for key, _field in filters}
+    if "value" in keys and "unit" in keys:
+        left = _normalized_measure(component.Value, component.Units)
+        right = _normalized_measure(data["value"], data["unit"])
+        if left is not None and right is not None:
+            if left != right:
+                return False
+            filters = [(key, field) for key, field in filters if key not in ("value", "unit")]
+    return all(
+        _normalized_spec_value(key, getattr(component, field)) == _normalized_spec_value(key, data[key])
+        for key, field in filters
+    )
+
+
 def _match_specification_item(data, components):
     component_id = data.get("componentId")
     if component_id is not None:
@@ -411,8 +464,7 @@ def _match_specification_item(data, components):
         return None
     matches = [
         component for component in components
-        if all(_normalized_spec_value(key, getattr(component, field)) == _normalized_spec_value(key, data[key])
-               for key, field in filters)
+        if _specification_fields_match(component, data, filters)
     ]
     if len(matches) == 1:
         return matches[0]
@@ -423,8 +475,7 @@ def _match_specification_item(data, components):
         parameter_filters = [(key, field) for key, field in filters if key in parameter_keys]
         matches = [
             component for component in components
-            if all(_normalized_spec_value(key, getattr(component, field)) == _normalized_spec_value(key, data[key])
-                   for key, field in parameter_filters)
+            if _specification_fields_match(component, data, parameter_filters)
         ]
     return matches[0] if len(matches) == 1 else None
 

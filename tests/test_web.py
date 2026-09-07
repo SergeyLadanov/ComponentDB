@@ -81,6 +81,21 @@ class ComponentApiTest(unittest.TestCase):
         output.seek(0)
         return output
 
+    def compact_specification_report(self, rows=None):
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.append(['#', '�������� ������������', '����������'])
+        for index, row in enumerate(rows or [
+            ['100nF 5% 16V X7R 0603', 2],
+            ['10k 5% 0.063W 0603', 8],
+            ['STM32F103C8T6', 1],
+        ], start=1):
+            worksheet.append([index, *row])
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        return output
+
     def test_auth_required_for_page_read_and_write(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 302)
@@ -463,6 +478,33 @@ class ComponentApiTest(unittest.TestCase):
         self.assertEqual(after['status'], 'enough')
         stored = self.db.SpecificationItem.get_by_id(after['id'])
         self.assertEqual(stored.ComponentID, 1)
+
+    def test_compact_bom_with_mojibake_headers_and_english_units_is_supported(self):
+        self.post(
+            'Add', group='Конденсатор', name='GRM188R71C104KA01D', value='0.1',
+            unit='мкФ', tol='5%', description='100nF X7R', case='0603',
+            manufacturer='Murata', cnt='20', cellnum='C-01',
+        )
+        response = self.client.post(
+            '/specifications/import',
+            data={
+                'name': 'Компактный BOM', 'deviceQuantity': '3',
+                'file': (self.compact_specification_report(), 'ResultTable (2).xlsx'),
+            },
+            content_type='multipart/form-data', headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        specification = self.client.get('/specifications', headers=self.headers).json['data'][0]
+        capacitor, resistor, microcontroller = specification['items']
+        self.assertEqual(
+            [capacitor['group'], capacitor['value'], capacitor['unit'], capacitor['componentId']],
+            ['Конденсатор', '0.1', 'мкФ', '1'],
+        )
+        self.assertEqual(
+            [resistor['group'], resistor['value'], resistor['unit'], resistor['status']],
+            ['Резистор', '10', 'кОм', 'unmatched'],
+        )
+        self.assertEqual(microcontroller['group'], 'Прочее')
 
 
 if __name__ == '__main__':

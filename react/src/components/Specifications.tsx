@@ -59,6 +59,8 @@ export default function Specifications({ specifications, components, selectedCom
   const [dirty, setDirty] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [pickerItem, setPickerItem] = useState<SpecificationItem | null>(null)
+  const [pickerSearch, setPickerSearch] = useState('')
 
   useEffect(() => { dialog.current?.showModal() }, [])
   useEffect(() => {
@@ -78,6 +80,16 @@ export default function Specifications({ specifications, components, selectedCom
     id: component.id,
     label: `${component.id} — ${component.name || component.group}${component.value ? `, ${component.value} ${component.unit}` : ''}, ${component.case || 'без корпуса'}`,
   })), [components])
+  const pickerResults = useMemo(() => {
+    const terms = pickerSearch.toLocaleLowerCase('ru').trim().split(/\s+/).filter(Boolean)
+    if (!terms.length) return components.slice(0, 50)
+    return components.filter(component => {
+      const text = [component.id, component.group, component.name, component.value,
+        component.unit, component.tol, component.description, component.case,
+        component.manufacturer, component.cellnum].join(' ').toLocaleLowerCase('ru')
+      return terms.every(term => text.includes(term))
+    }).slice(0, 50)
+  }, [components, pickerSearch])
 
   function fail(reason: unknown, fallback: string) {
     setError(reason instanceof Error ? reason.message : fallback)
@@ -146,6 +158,22 @@ export default function Specifications({ specifications, components, selectedCom
     setDirty(current => ({ ...current, [item.id]: true }))
   }
 
+  function openPicker(item: SpecificationItem) {
+    setPickerItem(item)
+    setPickerSearch(item.value ? `${item.value} ${item.unit}` : item.name)
+  }
+
+  function chooseComponent(component: Component) {
+    if (!pickerItem) return
+    const quantityPerDevice = (drafts[pickerItem.id] || toDraft(pickerItem)).quantityPerDevice
+    setDrafts(current => ({
+      ...current,
+      [pickerItem.id]: { ...fromComponent(component), quantityPerDevice },
+    }))
+    setDirty(current => ({ ...current, [pickerItem.id]: true }))
+    setPickerItem(null)
+  }
+
   const statusText = (item: SpecificationItem) => item.status === 'enough' ? 'Хватает' : item.status === 'shortage' ? `Не хватает ${item.shortageQuantity}` : 'Не сопоставлено'
 
   return <dialog ref={dialog} className="component-dialog specifications-dialog" aria-labelledby="specifications-title" onCancel={event => { event.preventDefault(); if (!busy) onClose() }}>
@@ -191,7 +219,7 @@ export default function Specifications({ specifications, components, selectedCom
                   {fields.map(field => <td key={field.key}><input className="form-control form-control-sm" type={field.type || 'text'} min={field.type === 'number' ? 1 : undefined} step={field.type === 'number' ? 1 : undefined} list={field.key === 'componentId' ? 'specification-components' : field.key === 'group' ? 'specification-types' : undefined} value={draft[field.key]} aria-label={field.title} onChange={event => change(item, field.key, event.target.value)} /></td>)}
                   <td className="specification-number">{item.requiredQuantity}</td>
                   <td className="specification-number">{item.stockQuantity}</td>
-                  <td><span className={`specification-status ${item.status}`}>{statusText(item)}</span></td>
+                  <td><span className={`specification-status ${item.status}`}>{statusText(item)}</span><button className="specification-pick-button" disabled={busy} onClick={() => openPicker(item)}>{item.status === 'unmatched' ? 'Найти на складе' : 'Изменить связь'}</button></td>
                   <td><button className="btn btn-sm btn-outline-danger delivery-delete-button" aria-label="Удалить позицию" disabled={busy} onClick={() => void removeItem(item)}>×</button></td>
                 </tr>
               })}</tbody>
@@ -201,6 +229,19 @@ export default function Specifications({ specifications, components, selectedCom
         </>}
       </>}
     </div>
+    {pickerItem && <div className="component-picker-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setPickerItem(null) }}>
+      <section className="component-picker" role="dialog" aria-modal="true" aria-labelledby="component-picker-title">
+        <div className="component-picker-heading"><div><h3 id="component-picker-title">Выбрать компонент на складе</h3><p>Строка: {pickerItem.name || [pickerItem.value, pickerItem.unit].filter(Boolean).join(' ') || pickerItem.group}</p></div><button className="btn-close" aria-label="Закрыть подбор" onClick={() => setPickerItem(null)} /></div>
+        <div className="component-picker-search"><input className="form-control" type="search" autoFocus placeholder="ID, артикул, номинал, корпус, описание…" value={pickerSearch} onChange={event => setPickerSearch(event.target.value)} /><span>Показано {pickerResults.length} из {components.length}</span></div>
+        <div className="component-picker-results">
+          <table className="table table-sm mb-0"><thead><tr><th>ID</th><th>Классификация</th><th>Наименование</th><th>Номинал</th><th>Корпус</th><th>Описание</th><th>Остаток</th><th /></tr></thead>
+            <tbody>{pickerResults.map(component => <tr key={component.id}><td>{component.id}</td><td>{component.group}</td><td><strong>{component.name || '—'}</strong></td><td>{component.value ? `${component.value} ${component.unit}` : '—'}</td><td>{component.case || '—'}</td><td>{component.description || '—'}</td><td>{component.cnt}</td><td><button className="btn btn-sm btn-primary" onClick={() => chooseComponent(component)}>Привязать</button></td></tr>)}</tbody>
+          </table>
+          {pickerResults.length === 0 && <div className="component-picker-empty">На складе ничего не найдено. Измените поисковый запрос.</div>}
+        </div>
+        <div className="component-picker-footer">После выбора нажмите «Сохранить и пересчитать» в спецификации.</div>
+      </section>
+    </div>}
     <div className="dialog-footer specification-footer">
       <span>{selectedDirty || headerDirty ? `Есть несохранённые изменения${selectedDirty ? `: ${selectedDirty} строк` : ''}` : 'Расчёт использует текущие остатки склада.'}</span>
       {selected && <>

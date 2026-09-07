@@ -172,10 +172,28 @@ h1 { font-size: 30px; letter-spacing: -.8px; font-weight: 650; margin-bottom: 8p
 .specification-status { display: inline-block; min-width: 98px; padding: 4px 7px; border-radius: 5px; text-align: center; white-space: nowrap; font-weight: 600; }
 .specification-status.enough { background: rgb(25 135 84 / 12%); color: var(--bs-success); }
 .specification-status.shortage, .specification-status.unmatched { background: rgb(220 53 69 / 10%); color: var(--bs-danger); }
+.specification-pick-button { display: block; margin: 4px auto 0; padding: 0; border: 0; background: transparent; color: var(--bs-link-color); font-size: 10px; white-space: nowrap; }
+.specification-pick-button:hover { text-decoration: underline; }
 .specification-row-unmatched td { background: rgb(220 53 69 / 3%); }
 .specification-footer { align-items: center; }
 .specification-footer > span { margin-right: auto; color: var(--app-muted); font-size: 12px; }
 .specification-footer .btn { font-size: 12px; }
+.component-picker-backdrop { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 24px; background: rgb(13 30 40 / 65%); }
+.component-picker { width: min(1100px, 100%); max-height: min(680px, 100%); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--app-border); border-radius: 12px; background: var(--app-surface); box-shadow: 0 18px 60px rgb(0 0 0 / 25%); }
+.component-picker-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--app-border); }
+.component-picker-heading h3 { margin: 0; font-size: 19px; }
+.component-picker-heading p { margin: 5px 0 0; color: var(--app-muted); font-size: 12px; }
+.component-picker-search { display: flex; align-items: center; gap: 16px; padding: 14px 22px; background: var(--app-tint); }
+.component-picker-search input { flex: 1; }
+.component-picker-search span { color: var(--app-muted); font-size: 11px; white-space: nowrap; }
+.component-picker-results { min-height: 180px; overflow: auto; }
+.component-picker-results table { font-size: 11px; --bs-table-bg: var(--app-surface); }
+.component-picker-results thead { position: sticky; top: 0; z-index: 1; }
+.component-picker-results th { padding: 9px; background: var(--app-tint); white-space: nowrap; }
+.component-picker-results td { padding: 8px 9px; vertical-align: middle; }
+.component-picker-results td:nth-child(6) { min-width: 230px; }
+.component-picker-empty { padding: 60px 20px; color: var(--app-muted); text-align: center; }
+.component-picker-footer { padding: 12px 22px; border-top: 1px solid var(--app-border); color: var(--app-muted); font-size: 11px; }
 .first-loading { text-align: center; padding: 60px; }
 @media (max-width: 767px) {
   .app-header { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
@@ -217,4 +235,6 @@ h1 { font-size: 30px; letter-spacing: -.8px; font-weight: 650; margin-bottom: 8p
   .specification-add-actions { width: 100%; margin-left: 0; flex-wrap: wrap; }
   .specification-footer { flex-wrap: wrap; }
   .specification-footer > span { width: 100%; }
+  .component-picker-backdrop { padding: 8px; }
+  .component-picker-search { align-items: stretch; flex-direction: column; gap: 7px; }
 }
