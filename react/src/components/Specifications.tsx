@@ -67,7 +67,18 @@ export default function Specifications({ specifications, components, selectedCom
   const [pickerItem, setPickerItem] = useState<SpecificationItem | null>(null)
   const [pickerSearch, setPickerSearch] = useState('')
 
-  useEffect(() => { dialog.current?.showModal() }, [])
+  useEffect(() => {
+    const element = dialog.current
+    const previousFocus = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    element?.showModal()
+    document.body.style.overflow = 'hidden'
+    return () => {
+      element?.close()
+      document.body.style.overflow = overflow
+      previousFocus?.focus()
+    }
+  }, [])
   useEffect(() => {
     if (!specifications.some(specification => specification.id === selectedId)) setSelectedId(specifications[0]?.id || '')
     const next: Record<string, SpecificationItemForm> = {}

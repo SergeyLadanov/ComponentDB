@@ -45,7 +45,18 @@ export default function ExpectedDeliveries({ deliveries, loading, onClose, onRel
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => { dialog.current?.showModal() }, [])
+  useEffect(() => {
+    const element = dialog.current
+    const previousFocus = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    element?.showModal()
+    document.body.style.overflow = 'hidden'
+    return () => {
+      element?.close()
+      document.body.style.overflow = overflow
+      previousFocus?.focus()
+    }
+  }, [])
   useEffect(() => {
     if (!deliveries.some(delivery => delivery.id === selectedId)) setSelectedId(deliveries[0]?.id || '')
     const next: Record<string, ComponentForm> = {}
