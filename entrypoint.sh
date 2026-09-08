@@ -2,4 +2,4 @@
 
  . /app/flask_env/bin/activate
 
-exec $@
+exec "$@"

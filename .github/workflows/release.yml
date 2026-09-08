@@ -1,0 +1,142 @@
+name: Release project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Read and validate application version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(python -c 'from version import __version__; print(__version__)')"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version in version.py: $VERSION" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure release does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists." >&2
+            exit 1
+          fi
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            TAG_COMMIT="$(git rev-list -n 1 "$TAG")"
+            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+              echo "Tag $TAG already points to another commit ($TAG_COMMIT)." >&2
+              exit 1
+            fi
+          fi
+          REMOTE_TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | cut -f1)"
+          if [ -z "$REMOTE_TAG_COMMIT" ]; then
+            REMOTE_TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG" | cut -f1)"
+          fi
+          if [ -n "$REMOTE_TAG_COMMIT" ] && [ "$REMOTE_TAG_COMMIT" != "$GITHUB_SHA" ]; then
+            echo "Remote tag $TAG already points to another object ($REMOTE_TAG_COMMIT)." >&2
+            exit 1
+          fi
+
+      - name: Read release notes from changelog
+        id: changelog
+        uses: embedd-actions/read_changelog_action@v4
+        with:
+          changelogfile: CHANGELOG.md
+          tag: ${{ steps.version.outputs.version }}
+
+      - name: Prepare release notes
+        env:
+          CHANGELOG_CONTENT: ${{ steps.changelog.outputs.content }}
+        shell: bash
+        run: |
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            echo "No CHANGELOG.md entry found for version ${{ steps.version.outputs.version }}." >&2
+            exit 1
+          fi
+          printf '%s\n' "$CHANGELOG_CONTENT" > release-notes.md
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run Python tests
+        run: python -m unittest
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: react/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: react
+        run: npm ci --no-audit --no-fund
+
+      - name: Test and build frontend
+        working-directory: react
+        run: npm test
+
+      - name: Build release archive
+        id: archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          PACKAGE="ComponentDB-$VERSION"
+          mkdir -p "release/$PACKAGE"
+          git archive HEAD | tar -x -C "release/$PACKAGE"
+          mkdir -p "release/$PACKAGE/static/dist"
+          cp -R static/dist/. "release/$PACKAGE/static/dist/"
+          (cd release && zip -qr "$PACKAGE.zip" "$PACKAGE")
+          echo "path=release/$PACKAGE.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          if ! git show-ref --verify --quiet "refs/tags/$TAG"; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+          fi
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            git push origin "$TAG"
+          fi
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          ARCHIVE: ${{ steps.archive.outputs.path }}
+        shell: bash
+        run: |
+          gh release create "$TAG" "$ARCHIVE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "ComponentDB $TAG" \
+            --notes-file release-notes.md \
+            --verify-tag

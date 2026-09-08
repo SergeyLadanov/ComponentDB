@@ -1,0 +1,13 @@
+.git
+.venv
+__pycache__
+**/__pycache__
+.pytest_cache
+.npm-cache
+.test-artifacts
+react/node_modules
+static/dist
+config.py
+dump
+MySQL_Data
+tests
