@@ -1,6 +1,6 @@
 import { appPath } from '../ts/urls'
 
-export type Session = { username: string | null; csrfToken: string }
+export type Session = { username: string | null; csrfToken: string; version: string }
 
 let csrfToken = ''
 

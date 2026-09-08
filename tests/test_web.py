@@ -8,6 +8,7 @@ import unittest
 from openpyxl import Workbook
 
 from tests.support import component, load_test_app
+from version import __version__
 
 
 class ComponentApiTest(unittest.TestCase):
@@ -132,6 +133,7 @@ class ComponentApiTest(unittest.TestCase):
         self.assertEqual(self.client.get('/login').status_code, 200)
         anonymous = self.client.get('/auth/session')
         self.assertIsNone(anonymous.json['username'])
+        self.assertEqual(anonymous.json['version'], __version__)
         self.assertEqual(anonymous.headers['Cache-Control'], 'no-store')
         self.assertEqual(self.login().status_code, 200)
         session_info = self.client.get('/auth/session').json

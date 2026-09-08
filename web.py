@@ -13,6 +13,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.exceptions import RequestEntityTooLarge
 from delivery_import import DeliveryImportError, parse_delivery_workbook
 from specification_import import SpecificationImportError, parse_specification_workbook
+from version import __version__
 
 
 # Текущий путь приложения
@@ -134,7 +135,11 @@ def upload_too_large(_error):
 def auth_session():
     if 'csrf_token' not in session:
         session['csrf_token'] = secrets.token_urlsafe(32)
-    return {'username': session_username(), 'csrfToken': session['csrf_token']}
+    return {
+        'username': session_username(),
+        'csrfToken': session['csrf_token'],
+        'version': __version__,
+    }
 
 
 @app.route('/login', methods=['GET', 'POST'])

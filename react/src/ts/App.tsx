@@ -54,6 +54,7 @@ export default function App() {
         <span className="brand-icon" aria-hidden="true">▦</span>
         <span>Component<span className="brand-accent">DB</span></span>
       </a>
+      {session?.version && <span className="app-version" title="Версия приложения">v{session.version}</span>}
       <span className="header-caption">Электронные компоненты</span>
       <SwitchTheme />
       {session?.username && <div className="header-account">

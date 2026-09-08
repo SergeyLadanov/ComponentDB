@@ -28,6 +28,7 @@ button, input, select, textarea { font: inherit; }
 .brand { display: flex; align-items: center; gap: 12px; color: white; text-decoration: none; font-size: 22px; font-weight: 650; letter-spacing: -.5px; }
 .brand-accent { color: #72c5b7; }
 .brand-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #507576; border-radius: 8px; color: #85d8c9; font-size: 28px; }
+.app-version { margin-left: -22px; color: #91a1aa; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .header-caption { font-size: 13px; border-left: 1px solid #3c515c; padding-left: 28px; }
 .theme-picker { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12px; }
 .theme-picker select { width: 132px; background-color: #243e4b; border-color: #49616e; color: #fff; color-scheme: dark; }
@@ -198,6 +199,7 @@ h1 { font-size: 30px; letter-spacing: -.8px; font-weight: 650; margin-bottom: 8p
 .first-loading { text-align: center; padding: 60px; }
 @media (max-width: 767px) {
   .app-header { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+  .app-version { margin-left: -6px; }
   .header-account { width: 100%; justify-content: flex-end; }
   .account-name { max-width: calc(100% - 100px); }
   .auth-main { padding: 28px 16px; }
