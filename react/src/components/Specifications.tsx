@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addSpecificationItem, createSpecification, deleteSpecification,
-  deleteSpecificationItem, importSpecification, specificationExportUrl,
+  createExpectedDeliveryFromSpecification, deleteSpecificationItem,
+  importSpecification, specificationExportUrl,
   updateSpecification, updateSpecificationItem,
 } from '../api/components'
 import { Component, componentTypes, Specification, SpecificationItem, SpecificationItemForm } from '../ts/types'
@@ -13,6 +14,7 @@ interface Props {
   loading: boolean
   onClose: () => void
   onReload: () => Promise<void>
+  onDeliveryCreated: () => Promise<void>
   onNotice: (message: string) => void
 }
 
@@ -47,7 +49,7 @@ const emptyItem = (): SpecificationItemForm => ({
   description: '', case: '', manufacturer: '', quantityPerDevice: '1',
 })
 
-export default function Specifications({ specifications, components, selectedComponent, loading, onClose, onReload, onNotice }: Props) {
+export default function Specifications({ specifications, components, selectedComponent, loading, onClose, onReload, onDeliveryCreated, onNotice }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [selectedId, setSelectedId] = useState(specifications[0]?.id || '')
   const [newName, setNewName] = useState('')
@@ -155,6 +157,17 @@ export default function Specifications({ specifications, components, selectedCom
     finally { setBusy(false) }
   }
 
+  async function createDelivery() {
+    if (!selected || selected.summary.shortage === 0) return
+    setBusy(true); setError('')
+    try {
+      const result = await createExpectedDeliveryFromSpecification(selected.id)
+      await onDeliveryCreated()
+      onNotice(`Ожидаемая поставка «${result.name}» создана: ${result.items} поз.`)
+    } catch (reason) { fail(reason, 'Не удалось создать ожидаемую поставку.') }
+    finally { setBusy(false) }
+  }
+
   function change(item: SpecificationItem, key: keyof SpecificationItemForm, value: string) {
     setDrafts(current => ({ ...current, [item.id]: { ...(current[item.id] || toDraft(item)), [key]: value } }))
     setDirty(current => ({ ...current, [item.id]: true }))
@@ -252,6 +265,7 @@ export default function Specifications({ specifications, components, selectedCom
       {selected && <>
         <a className={`btn btn-outline-secondary ${busy ? 'disabled' : ''}`} href={specificationExportUrl(selected.id, 'all')}>Выгрузить весь список</a>
         <a className={`btn btn-outline-primary ${busy || selected.summary.shortage === 0 ? 'disabled' : ''}`} href={specificationExportUrl(selected.id, 'missing')}>Выгрузить дозаказ</a>
+        <button className="btn btn-outline-primary" disabled={busy || selected.summary.shortage === 0} onClick={() => void createDelivery()}>Создать ожидаемую поставку</button>
         <button className="btn btn-primary" disabled={busy || (!selectedDirty && !headerDirty)} onClick={() => void save()}>Сохранить и пересчитать</button>
       </>}
     </div>

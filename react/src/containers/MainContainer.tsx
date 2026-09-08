@@ -206,6 +206,6 @@ export default function MainContainer() {
     <p className="table-hint">Двойной щелчок по строке — редактирование. «Добавить позицию» при выбранной строке — добавление по образцу.</p>
     {modal && <ComponentForm initial={modal.initial} editing={modal.editing} busy={busy} error={actionError} onClose={() => { setModal(null); setActionError('') }} onSubmit={form => mutate(modal.editing ? 'Edit' : 'Add', form, modal.id)} />}
     {deliveriesOpen && <ExpectedDeliveries deliveries={deliveries} loading={deliveriesLoading} onClose={() => setDeliveriesOpen(false)} onReload={reloadDeliveries} onConfirmed={showConfirmedDelivery} onNotice={setNotice} />}
-    {specificationsOpen && <Specifications specifications={specifications} components={components} selectedComponent={selected} loading={specificationsLoading} onClose={() => setSpecificationsOpen(false)} onReload={reloadSpecifications} onNotice={setNotice} />}
+    {specificationsOpen && <Specifications specifications={specifications} components={components} selectedComponent={selected} loading={specificationsLoading} onClose={() => setSpecificationsOpen(false)} onReload={reloadSpecifications} onDeliveryCreated={reloadDeliveries} onNotice={setNotice} />}
   </main>
 }

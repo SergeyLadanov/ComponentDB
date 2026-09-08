@@ -191,6 +191,15 @@ export async function deleteSpecificationItem(specificationId: string, itemId: s
 }
 
 
+export async function createExpectedDeliveryFromSpecification(specificationId: string) {
+  const response = await fetch(appPath(`/specifications/${specificationId}/delivery`), {
+    method: 'POST', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ id: string; items: number; name: string }>
+}
+
+
 export function specificationExportUrl(specificationId: string, scope: 'missing' | 'all') {
   return appPath(`/specifications/${specificationId}/export?scope=${scope}`)
 }

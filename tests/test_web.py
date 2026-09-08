@@ -425,8 +425,8 @@ class ComponentApiTest(unittest.TestCase):
         workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
         values = list(workbook.active.values)
         self.assertEqual(values, [
-            ('#', 'Тип элемента', 'Наименование', 'Количество'),
-            (1, 'Резистор', 'RC0603 10 кОм 1% 0603 Yageo', 1),
+            ('#', 'Тип элемента', 'Наименование', 'Описание', 'Количество'),
+            (1, 'Резистор', 'RC0603 10 кОм 1% 0603 Yageo', None, 1),
         ])
         workbook.close()
 
@@ -436,10 +436,62 @@ class ComponentApiTest(unittest.TestCase):
         workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
         values = list(workbook.active.values)
         self.assertEqual(values, [
-            ('#', 'Тип элемента', 'Наименование', 'Количество'),
-            (1, 'Резистор', 'RC0603 10 кОм 1% 0603 Yageo', 4),
+            ('#', 'Тип элемента', 'Наименование', 'Описание', 'Количество'),
+            (1, 'Резистор', 'RC0603 10 кОм 1% 0603 Yageo', None, 4),
         ])
         workbook.close()
+
+    def test_reorder_list_creates_expected_delivery(self):
+        self.post('Add', cnt='3', description='')
+        created = self.client.post(
+            '/specifications', json={'name': 'Плата управления', 'deviceQuantity': 2},
+            headers=self.headers,
+        )
+        specification_id = created.json['id']
+        for quantity in ('1', '1'):
+            response = self.client.post(
+                f'/specifications/{specification_id}/items',
+                json={'componentId': '1', 'quantityPerDevice': quantity},
+                headers=self.headers,
+            )
+            self.assertEqual(response.status_code, 201)
+
+        response = self.client.post(
+            f'/specifications/{specification_id}/delivery', headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json['items'], 1)
+        delivery = self.client.get('/deliveries', headers=self.headers).json['data'][0]
+        self.assertEqual(delivery['id'], response.json['id'])
+        self.assertEqual(delivery['name'], 'Дозаказ — Плата управления')
+        self.assertEqual(delivery['sourceFile'], f'Спецификация #{specification_id}')
+        self.assertEqual(len(delivery['items']), 1)
+        item = delivery['items'][0]
+        self.assertEqual(item['sourceRow'], 1)
+        self.assertEqual(item['cnt'], '1')
+        self.assertEqual(item['cellnum'], 'A-01')
+
+        confirmed = self.client.post(
+            f"/deliveries/{delivery['id']}/confirm", headers=self.headers,
+        )
+        self.assertEqual(confirmed.json, {'created': 0, 'merged': 1, 'items': 1})
+        self.assertEqual(self.rows()[0][9], 4)
+
+    def test_expected_delivery_requires_existing_specification_with_shortage(self):
+        created = self.client.post(
+            '/specifications', json={'name': 'Без дефицита', 'deviceQuantity': 1},
+            headers=self.headers,
+        )
+        specification_id = created.json['id']
+        response = self.client.post(
+            f'/specifications/{specification_id}/delivery', headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('больше не требуется', response.json['error'])
+        self.assertEqual(self.client.post(
+            '/specifications/999/delivery', headers=self.headers,
+        ).status_code, 404)
+        self.assertEqual(self.client.get('/deliveries', headers=self.headers).json['data'], [])
 
     def test_unmatched_specification_item_is_included_in_reorder_export(self):
         created = self.client.post(
@@ -465,8 +517,8 @@ class ComponentApiTest(unittest.TestCase):
         self.assertEqual(exported.status_code, 200)
         workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
         self.assertEqual(list(workbook.active.values), [
-            ('#', 'Тип элемента', 'Наименование', 'Количество'),
-            (1, 'Конденсатор', '100 нФ 10% Керамический X7R 0603 Murata', 12),
+            ('#', 'Тип элемента', 'Наименование', 'Описание', 'Количество'),
+            (1, 'Конденсатор', '100 нФ 10% 0603 Murata', 'Керамический\nX7R', 12),
         ])
         workbook.close()
 

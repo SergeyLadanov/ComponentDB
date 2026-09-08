@@ -708,6 +708,45 @@ def getSpecificationForExport(specification_id, include_all=False):
         _rematch_specification_items(items, components)
         return specification, buildSpecificationOrderRows(specification, items, components, include_all)
 
+
+def createExpectedDeliveryFromSpecification(specification_id):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            specification = Specification.get_or_none(Specification.ID == specification_id)
+            if specification is None:
+                return None
+            items = list(specification.items.order_by(SpecificationItem.ID))
+            components = {item.ID: item for item in Component.select()}
+            _rematch_specification_items(items, components)
+            order_rows = buildSpecificationOrderRows(
+                specification, items, components, include_all=False,
+            )
+            if not order_rows:
+                return {"id": "", "items": 0}
+            delivery_items = [
+                {
+                    "sourceRow": source_row,
+                    "group": row["group"],
+                    "name": row["name"],
+                    "value": row["value"],
+                    "unit": row["unit"],
+                    "tol": row["tol"],
+                    "description": row["description"],
+                    "case": row["case"],
+                    "manufacturer": row["manufacturer"],
+                    "cnt": row["toOrder"],
+                    "cellnum": row["cellnum"],
+                }
+                for source_row, row in enumerate(order_rows, start=1)
+            ]
+            name = f'Дозаказ — {specification.Name}'[:255]
+            delivery_id = _createExpectedDelivery(
+                name,
+                f'Спецификация #{specification.ID}',
+                delivery_items,
+            )
+            return {"id": delivery_id, "items": len(delivery_items), "name": name}
+
 # Функция отправки данных из базы
 def getData(filter):
     dbhandle.connect()

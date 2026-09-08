@@ -154,7 +154,7 @@ export default function ExpectedDeliveries({ deliveries, loading, onClose, onRel
 
   return <dialog ref={dialog} className="component-dialog deliveries-dialog" aria-labelledby="deliveries-title" onCancel={event => { event.preventDefault(); if (!busy) onClose() }}>
     <div className="dialog-heading">
-      <div><h2 id="deliveries-title">Ожидаемые поставки</h2><p>Импорт из Excel-отчёта PCB BOM Parser</p></div>
+      <div><h2 id="deliveries-title">Ожидаемые поставки</h2><p>Импорт из Excel и дозаказ из спецификаций</p></div>
       <button className="btn-close" aria-label="Закрыть" disabled={busy} onClick={onClose} />
     </div>
     <form className="delivery-import" onSubmit={importFile}>
@@ -167,7 +167,7 @@ export default function ExpectedDeliveries({ deliveries, loading, onClose, onRel
       {loading ? <div className="delivery-empty"><span className="spinner-border spinner-border-sm" /> Загрузка поставок…</div> : deliveries.length === 0 ? <div className="delivery-empty"><strong>Ожидаемых поставок нет</strong><span>Загрузите Excel-отчёт, чтобы подготовить новую поставку.</span></div> : <>
         <div className="delivery-selector">
           <label><span>Поставка</span><select className="form-select form-select-sm" value={selectedId} disabled={busy} onChange={event => setSelectedId(event.target.value)}>{deliveries.map(delivery => <option key={delivery.id} value={delivery.id}>{delivery.name} ({delivery.items.length})</option>)}</select></label>
-          {selected && <div className="delivery-meta">Файл: <strong>{selected.sourceFile}</strong><span>Создана: {selected.created}</span></div>}
+          {selected && <div className="delivery-meta">Источник: <strong>{selected.sourceFile}</strong><span>Создана: {selected.created}</span></div>}
         </div>
         {selected && <>
           <div className="delivery-status">

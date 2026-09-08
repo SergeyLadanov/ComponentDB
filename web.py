@@ -342,7 +342,7 @@ def export_specification(specification_id):
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = 'Дозаказ' if not include_all else 'Потребность'
-    headers = ['#', 'Тип элемента', 'Наименование', 'Количество']
+    headers = ['#', 'Тип элемента', 'Наименование', 'Описание', 'Количество']
     sheet.append(headers)
     for cell in sheet[1]:
         cell.font = Font(bold=True, color='FFFFFF')
@@ -351,7 +351,7 @@ def export_specification(specification_id):
         name_parts = []
         for value in (
             row['name'], row['value'], row['unit'], row['tol'],
-            row['description'], row['case'], row['manufacturer'],
+            row['case'], row['manufacturer'],
         ):
             value = ' '.join(str(value or '').split())
             if value and value != '-':
@@ -360,11 +360,12 @@ def export_specification(specification_id):
             number,
             row['group'],
             ' '.join(name_parts),
+            row['description'],
             row['required'] if include_all else row['toOrder'],
         ])
     sheet.freeze_panes = 'A2'
     sheet.auto_filter.ref = sheet.dimensions
-    widths = [8, 24, 80, 14]
+    widths = [8, 24, 60, 50, 14]
     for index, width in enumerate(widths, start=1):
         sheet.column_dimensions[chr(64 + index)].width = width
     output = BytesIO()
@@ -382,6 +383,21 @@ def export_specification(specification_id):
         f"attachment; filename=specification.xlsx; filename*=UTF-8''{quote(filename)}"
     )
     return response
+
+
+@app.route('/specifications/<specification_id>/delivery', methods=['POST'])
+@auth_required
+def create_delivery_from_specification(specification_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    result = db_if.createExpectedDeliveryFromSpecification(specification_id)
+    if result is None:
+        return {'error': 'Спецификация не найдена.'}, 404
+    if not result['items']:
+        return {'error': 'Дозаказ больше не требуется. Обновите спецификацию.'}, 409
+    return result, 201
 
 
 @app.route('/deliveries', methods=['GET'])
