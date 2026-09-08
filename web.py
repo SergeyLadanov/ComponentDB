@@ -314,6 +314,47 @@ def specification_items(specification_id):
     return {'id': item_id}, 201
 
 
+@app.route('/specifications/<specification_id>/selected-items', methods=['POST'])
+@auth_required
+def selected_specification_items(specification_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not isinstance(data.get('componentIds'), list) or not data['componentIds']:
+            raise ValueError('Выберите хотя бы одну позицию склада.')
+        if len(data['componentIds']) > 1000:
+            raise ValueError('За один раз можно добавить не более 1000 позиций.')
+        component_ids = []
+        seen = set()
+        for value in data['componentIds']:
+            component_id = positive_id(value, 'компонента')
+            if component_id not in seen:
+                component_ids.append(component_id)
+                seen.add(component_id)
+    except ValueError as error:
+        return {'error': str(error)}, 400
+
+    result = db_if.addOrIncrementSpecificationItems(specification_id, component_ids)
+    if result is None:
+        return {'error': 'Спецификация не найдена.'}, 404
+    if result['missing']:
+        return {'error': 'Некоторые выбранные позиции больше не существуют на складе.'}, 404
+    return result
+
+
+@app.route('/specifications/<specification_id>/write-off', methods=['POST'])
+@auth_required
+def write_off_specification(specification_id):
+    try:
+        specification_id = positive_id(specification_id, 'спецификации')
+    except ValueError as error:
+        return {'error': str(error)}, 400
+    result = db_if.writeOffSpecification(specification_id)
+    if result is None:
+        return {'error': 'Спецификация не найдена.'}, 404
+    return result
+
+
 @app.route('/specifications/<specification_id>/items/<item_id>', methods=['PUT', 'DELETE'])
 @auth_required
 def specification_item(specification_id, item_id):

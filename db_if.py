@@ -639,6 +639,123 @@ def addSpecificationItem(specification_id, data):
             return str(item.ID)
 
 
+def addOrIncrementSpecificationItems(specification_id, component_ids):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            specification = Specification.get_or_none(Specification.ID == specification_id)
+            if specification is None:
+                return None
+
+            components = {
+                component.ID: component
+                for component in Component.select().where(Component.ID.in_(component_ids))
+            }
+            missing = [component_id for component_id in component_ids if component_id not in components]
+            if missing:
+                return {"added": 0, "incremented": 0, "missing": [str(item) for item in missing]}
+
+            existing = {}
+            for item in (SpecificationItem.select()
+                         .where((SpecificationItem.Specification == specification_id) &
+                                (SpecificationItem.ComponentID.in_(component_ids)))
+                         .order_by(SpecificationItem.ID)):
+                existing.setdefault(item.ComponentID, item)
+
+            added = 0
+            incremented = 0
+            component_list = list(components.values())
+            for component_id in component_ids:
+                item = existing.get(component_id)
+                if item is not None:
+                    item.QuantityPerDevice += 1
+                    item.save(only=[SpecificationItem.QuantityPerDevice])
+                    incremented += 1
+                    continue
+                values = _spec_item_values({
+                    "componentId": str(component_id),
+                    "quantityPerDevice": 1,
+                }, component_list)
+                SpecificationItem.create(Specification=specification_id, **values)
+                added += 1
+
+            Specification.update(ChangeDate=datetime.now()).where(
+                Specification.ID == specification_id
+            ).execute()
+            return {"added": added, "incremented": incremented, "missing": []}
+
+
+def writeOffSpecification(specification_id):
+    with dbhandle.connection_context():
+        with dbhandle.atomic():
+            specification = Specification.get_or_none(Specification.ID == specification_id)
+            if specification is None:
+                return None
+
+            items = list(SpecificationItem.select().where(
+                SpecificationItem.Specification == specification_id
+            ).order_by(SpecificationItem.ID))
+            components = {component.ID: component for component in Component.select()}
+            unmatched = []
+            requirements = {}
+            for item in items:
+                required = item.QuantityPerDevice * specification.DeviceQuantity
+                component = components.get(item.ComponentID)
+                if component is None:
+                    unmatched.append({
+                        "itemId": str(item.ID),
+                        "name": item.ManufacturerPartNumber or item.Type,
+                        "requiredQuantity": str(required),
+                    })
+                    continue
+                requirement = requirements.setdefault(component.ID, {
+                    "component": component,
+                    "required": 0,
+                })
+                requirement["required"] += required
+
+            insufficient = []
+            written_off_positions = 0
+            written_off_quantity = 0
+            change_date = datetime.now()
+            for component_id, requirement in requirements.items():
+                component = requirement["component"]
+                required = requirement["required"]
+                quantity_to_write_off = min(component.Quantity, required)
+                if component.Quantity < required:
+                    insufficient.append({
+                        "componentId": str(component_id),
+                        "name": component.ManufacturerPartNumber or component.Type,
+                        "requiredQuantity": str(required),
+                        "stockQuantity": str(component.Quantity),
+                    })
+                if quantity_to_write_off == 0:
+                    continue
+                changed = (Component.update(
+                    Quantity=Component.Quantity - quantity_to_write_off,
+                    ChangeDate=change_date,
+                ).where(
+                    (Component.ID == component_id) & (Component.Quantity >= quantity_to_write_off)
+                ).execute())
+                if not changed:
+                    current = Component.get_or_none(Component.ID == component_id)
+                    insufficient.append({
+                        "componentId": str(component_id),
+                        "name": component.ManufacturerPartNumber or component.Type,
+                        "requiredQuantity": str(required),
+                        "stockQuantity": str(current.Quantity if current is not None else 0),
+                    })
+                    continue
+                written_off_positions += 1
+                written_off_quantity += quantity_to_write_off
+
+            return {
+                "writtenOffPositions": written_off_positions,
+                "writtenOffQuantity": str(written_off_quantity),
+                "unmatched": unmatched,
+                "insufficient": insufficient,
+            }
+
+
 def updateSpecificationItem(specification_id, item_id, data):
     with dbhandle.connection_context():
         with dbhandle.atomic():

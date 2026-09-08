@@ -1,21 +1,23 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  addSpecificationItem, createSpecification, deleteSpecification,
+  addSelectedSpecificationItems, addSpecificationItem, createSpecification, deleteSpecification,
   createExpectedDeliveryFromSpecification, deleteSpecificationItem,
   importSpecification, specificationExportUrl,
-  updateSpecification, updateSpecificationItem,
+  updateSpecification, updateSpecificationItem, writeOffSpecification,
 } from '../api/components'
 import { Component, componentTypes, Specification, SpecificationItem, SpecificationItemForm } from '../ts/types'
 
 interface Props {
   specifications: Specification[]
   components: Component[]
-  selectedComponent?: Component
+  selectedComponents: Component[]
   loading: boolean
   onClose: () => void
   onReload: () => Promise<void>
+  onStockReload: () => Promise<void>
   onDeliveryCreated: () => Promise<void>
   onNotice: (message: string) => void
+  onSelectionClear: () => void
 }
 
 const fields: { key: keyof SpecificationItemForm; title: string; width: string; type?: string }[] = [
@@ -49,7 +51,7 @@ const emptyItem = (): SpecificationItemForm => ({
   description: '', case: '', manufacturer: '', quantityPerDevice: '1',
 })
 
-export default function Specifications({ specifications, components, selectedComponent, loading, onClose, onReload, onDeliveryCreated, onNotice }: Props) {
+export default function Specifications({ specifications, components, selectedComponents, loading, onClose, onReload, onStockReload, onDeliveryCreated, onNotice, onSelectionClear }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [selectedId, setSelectedId] = useState(specifications[0]?.id || '')
   const [newName, setNewName] = useState('')
@@ -61,6 +63,7 @@ export default function Specifications({ specifications, components, selectedCom
   const [dirty, setDirty] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [warning, setWarning] = useState('')
   const [pickerItem, setPickerItem] = useState<SpecificationItem | null>(null)
   const [pickerSearch, setPickerSearch] = useState('')
 
@@ -76,6 +79,7 @@ export default function Specifications({ specifications, components, selectedCom
   useEffect(() => {
     if (selected) { setHeaderName(selected.name); setDeviceQuantity(selected.deviceQuantity) }
   }, [selected?.id, selected?.name, selected?.deviceQuantity])
+  useEffect(() => { setWarning('') }, [selectedId])
   const selectedDirty = selected?.items.filter(item => dirty[item.id]).length || 0
   const headerDirty = Boolean(selected && (headerName !== selected.name || deviceQuantity !== selected.deviceQuantity))
   const stockOptions = useMemo(() => components.map(component => ({
@@ -141,6 +145,21 @@ export default function Specifications({ specifications, components, selectedCom
     finally { setBusy(false) }
   }
 
+  async function addSelected() {
+    if (!selected || selectedComponents.length === 0) return
+    setBusy(true); setError('')
+    try {
+      const result = await addSelectedSpecificationItems(selected.id, selectedComponents.map(component => component.id))
+      onSelectionClear()
+      await onReload()
+      const parts = []
+      if (result.added > 0) parts.push(`добавлено новых — ${result.added}`)
+      if (result.incremented > 0) parts.push(`увеличено количество — ${result.incremented}`)
+      onNotice(`Спецификация обновлена: ${parts.join(', ')}.`)
+    } catch (reason) { fail(reason, 'Не удалось добавить выбранные позиции.') }
+    finally { setBusy(false) }
+  }
+
   async function removeItem(item: SpecificationItem) {
     if (!selected || !window.confirm(`Удалить «${item.name || item.group}» из спецификации?`)) return
     setBusy(true); setError('')
@@ -165,6 +184,41 @@ export default function Specifications({ specifications, components, selectedCom
       await onDeliveryCreated()
       onNotice(`Ожидаемая поставка «${result.name}» создана: ${result.items} поз.`)
     } catch (reason) { fail(reason, 'Не удалось создать ожидаемую поставку.') }
+    finally { setBusy(false) }
+  }
+
+  async function writeOff() {
+    if (!selected || selected.items.length === 0) return
+    const unmatched = selected.items.filter(item => !item.componentId).length
+    const insufficient = new Set(selected.items.filter(item => item.componentId && item.status === 'shortage').map(item => item.componentId)).size
+    const caveats = []
+    if (unmatched > 0) caveats.push(`Без списания останутся позиции без привязки к складу — ${unmatched}`)
+    if (insufficient > 0) caveats.push(`Для дефицитных позиций (${insufficient}) будет списано всё доступное количество`)
+    const confirmation = caveats.length > 0
+      ? `Списать позиции для ${selected.deviceQuantity} устр.?\n\n${caveats.join('. ')}.`
+      : `Списать необходимые количества всех позиций для ${selected.deviceQuantity} устр.?`
+    if (!window.confirm(confirmation)) return
+
+    setBusy(true); setError(''); setWarning('')
+    try {
+      const result = await writeOffSpecification(selected.id)
+      await Promise.all([onStockReload(), onReload()])
+      if (result.writtenOffPositions > 0) {
+        onNotice(`Списано позиций: ${result.writtenOffPositions}, всего компонентов: ${result.writtenOffQuantity} шт.`)
+      }
+      const warnings = []
+      if (result.unmatched.length > 0) {
+        const details = result.unmatched.slice(0, 5).map(item => item.name).join(', ')
+        const remainder = result.unmatched.length > 5 ? ` и ещё ${result.unmatched.length - 5}` : ''
+        warnings.push(`Без привязки к складу (${result.unmatched.length}): ${details}${remainder}.`)
+      }
+      if (result.insufficient.length > 0) {
+        const details = result.insufficient.slice(0, 5).map(item => `${item.name} — нужно ${item.requiredQuantity}, есть ${item.stockQuantity}`).join('; ')
+        const remainder = result.insufficient.length > 5 ? `; и ещё ${result.insufficient.length - 5}` : ''
+        warnings.push(`Недостаточный остаток (${result.insufficient.length}): ${details}${remainder}. Доступное количество списано полностью.`)
+      }
+      if (warnings.length > 0) setWarning(warnings.join(' '))
+    } catch (reason) { fail(reason, 'Не удалось списать позиции спецификации.') }
     finally { setBusy(false) }
   }
 
@@ -203,6 +257,7 @@ export default function Specifications({ specifications, components, selectedCom
       <button className="btn btn-sm btn-primary" disabled={busy}>{file ? 'Импортировать' : 'Создать пустую'}</button>
     </form>
     {error && <div className="alert alert-danger mx-4 mt-3 mb-0" role="alert">{error}</div>}
+    {warning && <div className="alert alert-warning mx-4 mt-3 mb-0" role="alert">{warning}</div>}
     <div className="specifications-body">
       {loading ? <div className="delivery-empty">Загрузка спецификаций…</div> : specifications.length === 0 ? <div className="delivery-empty"><strong>Спецификаций пока нет</strong><span>Создайте пустую вручную или загрузите Excel-файл.</span></div> : <>
         <div className="specification-toolbar">
@@ -219,7 +274,7 @@ export default function Specifications({ specifications, components, selectedCom
             <span className="text-success">Хватает: <strong>{selected.summary.enough}</strong></span>
             <span className={selected.summary.shortage ? 'text-danger' : 'text-success'}>К дозаказу: <strong>{selected.summary.shortage} поз. / {selected.summary.toOrder} шт.</strong></span>
             <div className="specification-add-actions">
-              {selectedComponent && <button className="btn btn-sm btn-primary" disabled={busy} onClick={() => void add(fromComponent(selectedComponent))}>Добавить выбранный №{selectedComponent.id}</button>}
+              {selectedComponents.length > 0 && <button className="btn btn-sm btn-primary" disabled={busy} onClick={() => void addSelected()}>{selectedComponents.length === 1 ? `Добавить выбранный №${selectedComponents[0].id}` : `Добавить выбранные (${selectedComponents.length})`}</button>}
               <button className="btn btn-sm btn-outline-primary" disabled={busy} onClick={() => void add(emptyItem())}>Добавить строку по параметрам</button>
             </div>
           </div>
@@ -263,6 +318,7 @@ export default function Specifications({ specifications, components, selectedCom
     <div className="dialog-footer specification-footer">
       <span>{selectedDirty || headerDirty ? `Есть несохранённые изменения${selectedDirty ? `: ${selectedDirty} строк` : ''}` : 'Расчёт использует текущие остатки склада.'}</span>
       {selected && <>
+        <button className="btn btn-danger" title={selectedDirty || headerDirty ? 'Сначала сохраните изменения спецификации' : undefined} disabled={busy || selected.items.length === 0 || selectedDirty > 0 || headerDirty} onClick={() => void writeOff()}>Списать позиции</button>
         <a className={`btn btn-outline-secondary ${busy ? 'disabled' : ''}`} href={specificationExportUrl(selected.id, 'all')}>Выгрузить весь список</a>
         <a className={`btn btn-outline-primary ${busy || selected.summary.shortage === 0 ? 'disabled' : ''}`} href={specificationExportUrl(selected.id, 'missing')}>Выгрузить дозаказ</a>
         <button className="btn btn-outline-primary" disabled={busy || selected.summary.shortage === 0} onClick={() => void createDelivery()}>Создать ожидаемую поставку</button>

@@ -19,7 +19,7 @@ export default function MainContainer() {
   const [sort, setSort] = useState<{ key: ColumnKey; ascending: boolean }>({ key: 'id', ascending: true })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [subtract, setSubtract] = useState('1')
   const [modal, setModal] = useState<{ initial: FormData; id: string; editing: boolean } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -56,15 +56,20 @@ export default function MainContainer() {
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, pages)
   const rows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  const selected = filtered.find(item => item.id === selectedId)
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
+  const selectedComponents = selectedIds.flatMap(id => {
+    const component = components.find(item => item.id === id)
+    return component ? [component] : []
+  })
+  const selected = selectedComponents.length === 1 ? selectedComponents[0] : undefined
   const disabled = busy || loading || Boolean(error)
   const hasFilters = Boolean(type || search || Object.values(filters).some(Boolean))
   const totalQuantity = components.reduce((total, item) => total + Number(item.cnt), 0)
 
-  useEffect(() => { setPage(1); setSelectedId(null) }, [type, search, filters, pageSize])
+  useEffect(() => { setPage(1); setSelectedIds([]) }, [type, search, filters, pageSize])
   useEffect(() => {
-    if (selectedId && !components.some(item => item.id === selectedId)) setSelectedId(null)
-  }, [components, selectedId])
+    setSelectedIds(current => current.filter(id => components.some(item => item.id === id)))
+  }, [components])
   useEffect(() => { if (page > pages) setPage(pages) }, [page, pages])
   useEffect(() => {
     if (!notice) return
@@ -113,7 +118,7 @@ export default function MainContainer() {
       const result = await saveComponent(operation, form, id)
       setModal(null)
       setNotice(result === 'Match' ? 'Совпадающие позиции объединены. Количество суммировано.' : operation === 'Remove' ? 'Позиция удалена.' : operation === 'Add' ? 'Позиция добавлена.' : 'Изменения сохранены.')
-      if (operation !== 'Edit' || result === 'Match') setSelectedId(null)
+      if (operation !== 'Edit' || result === 'Match') setSelectedIds([])
       await reload()
     } catch (reason) {
       setActionError(reason instanceof Error ? reason.message : 'Не удалось сохранить изменения.')
@@ -129,14 +134,41 @@ export default function MainContainer() {
     setFilters({})
     setSort({ key: 'changed', ascending: false })
     setPage(1)
-    setSelectedId(null)
+    setSelectedIds([])
     setDeliveriesOpen(false)
     await reload()
     setNotice(`Поставка подтверждена: новых позиций — ${result.created}, объединено — ${result.merged}. Последние изменения показаны сверху.`)
   }
 
-  function remove() {
-    if (selected && window.confirm(`Удалить позицию №${selected.id} «${selected.name || selected.group}»?`)) void mutate('Remove', selected, selected.id)
+  async function remove() {
+    if (selectedComponents.length === 0) return
+    const confirmation = selectedComponents.length === 1
+      ? `Удалить позицию №${selectedComponents[0].id} «${selectedComponents[0].name || selectedComponents[0].group}»?`
+      : `Удалить выбранные позиции (${selectedComponents.length})?`
+    if (!window.confirm(confirmation) || inFlight.current) return
+
+    inFlight.current = true
+    setBusy(true)
+    setActionError('')
+    setNotice('')
+    const failedIds: string[] = []
+    try {
+      for (const component of selectedComponents) {
+        try {
+          await saveComponent('Remove', component, component.id)
+        } catch {
+          failedIds.push(component.id)
+        }
+      }
+      setSelectedIds(failedIds)
+      await reload()
+      const deletedCount = selectedComponents.length - failedIds.length
+      if (deletedCount > 0) setNotice(deletedCount === 1 ? 'Позиция удалена.' : `Удалено позиций: ${deletedCount}.`)
+      if (failedIds.length > 0) setActionError(`Не удалось удалить позиций: ${failedIds.length}. Обновите таблицу и повторите попытку.`)
+    } finally {
+      inFlight.current = false
+      setBusy(false)
+    }
   }
 
   function writeOff() {
@@ -176,12 +208,12 @@ export default function MainContainer() {
         <button className="btn btn-outline-secondary" disabled={!hasFilters} onClick={resetFilters}>Сбросить фильтры</button>
       </div>
       <div className="selection-toolbar">
-        <span className="selection-status">{selected ? <>Позиция <strong>№{selected.id}</strong><span className="selection-quantity">Остаток: <strong>{selected.cnt} шт.</strong></span></> : 'Выберите позицию в таблице'}</span>
+        <span className="selection-status">{selectedComponents.length === 0 ? 'Выберите позиции в таблице' : selected ? <>Позиция <strong>№{selected.id}</strong><span className="selection-quantity">Остаток: <strong>{selected.cnt} шт.</strong></span></> : <>Выбрано позиций: <strong>{selectedComponents.length}</strong></>}</span>
         <div className="selection-actions">
           <button className="btn btn-sm btn-primary add-button" disabled={disabled} onClick={() => openForm(false)}><span aria-hidden="true">＋</span> Добавить позицию</button>
           <button className="btn btn-sm btn-outline-secondary" disabled={!selected || disabled} onClick={() => openForm(true)}>Редактировать</button>
-          <button className="btn btn-sm btn-outline-danger" disabled={!selected || disabled} onClick={remove}>Удалить</button>
-          <button className="btn btn-sm btn-outline-primary" disabled={!selected || disabled} onClick={() => { setSpecificationsOpen(true); void reloadSpecifications() }}>В спецификацию</button>
+          <button className="btn btn-sm btn-outline-danger" disabled={selectedComponents.length === 0 || disabled} onClick={() => void remove()}>Удалить</button>
+          <button className="btn btn-sm btn-outline-primary" disabled={selectedComponents.length === 0 || disabled} onClick={() => { setSpecificationsOpen(true); void reloadSpecifications() }}>В спецификацию</button>
           <div className="write-off-controls">
             <select className="form-select form-select-sm" aria-label="Количество для списания" value={subtract} disabled={!selected || disabled} onChange={event => setSubtract(event.target.value)}>{Array.from({ length: 10 }, (_, i) => i + 1).map(value => <option key={value}>{value}</option>)}</select><span>шт.</span>
             <button className="btn btn-sm btn-outline-secondary" disabled={!selected || disabled || Number(selected.cnt) === 0} onClick={writeOff}>Списать</button>
@@ -189,23 +221,23 @@ export default function MainContainer() {
         </div>
       </div>
 
-      <ComponentTable rows={rows} highlight={highlight} selectedId={selectedId} onSelect={id => setSelectedId(current => current === id ? null : id)} onEdit={item => openForm(true, item)} filters={filters} onFilter={(key, value) => setFilters(current => ({ ...current, [key]: value }))} sort={sort} onSort={key => setSort(current => ({ key, ascending: current.key === key ? !current.ascending : true }))} loading={loading} disabled={disabled} />
+      <ComponentTable rows={rows} highlight={highlight} selectedIds={selectedIdSet} onSelect={id => setSelectedIds(current => current.includes(id) ? current.filter(selectedId => selectedId !== id) : [...current, id])} onEdit={item => openForm(true, item)} filters={filters} onFilter={(key, value) => setFilters(current => ({ ...current, [key]: value }))} sort={sort} onSort={key => setSort(current => ({ key, ascending: current.key === key ? !current.ascending : true }))} loading={loading} disabled={disabled} />
 
       <div className="table-footer">
         <span role="status">{filtered.length ? `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filtered.length)} из ${filtered.length}` : 'Нет записей'}</span>
         <label className="page-size">На странице<select className="form-select form-select-sm" value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>{[25, 50, 100].map(value => <option key={value}>{value}</option>)}</select></label>
         <nav className="pagination-controls" aria-label="Страницы таблицы">
-          <button className="btn btn-sm btn-outline-secondary" aria-label="Первая страница" disabled={currentPage === 1} onClick={() => { setPage(1); setSelectedId(null) }}>«</button>
-          <button className="btn btn-sm btn-outline-secondary" aria-label="Предыдущая страница" disabled={currentPage === 1} onClick={() => { setPage(currentPage - 1); setSelectedId(null) }}>‹</button>
+          <button className="btn btn-sm btn-outline-secondary" aria-label="Первая страница" disabled={currentPage === 1} onClick={() => { setPage(1); setSelectedIds([]) }}>«</button>
+          <button className="btn btn-sm btn-outline-secondary" aria-label="Предыдущая страница" disabled={currentPage === 1} onClick={() => { setPage(currentPage - 1); setSelectedIds([]) }}>‹</button>
           <span>{currentPage} / {pages}</span>
-          <button className="btn btn-sm btn-outline-secondary" aria-label="Следующая страница" disabled={currentPage === pages} onClick={() => { setPage(currentPage + 1); setSelectedId(null) }}>›</button>
-          <button className="btn btn-sm btn-outline-secondary" aria-label="Последняя страница" disabled={currentPage === pages} onClick={() => { setPage(pages); setSelectedId(null) }}>»</button>
+          <button className="btn btn-sm btn-outline-secondary" aria-label="Следующая страница" disabled={currentPage === pages} onClick={() => { setPage(currentPage + 1); setSelectedIds([]) }}>›</button>
+          <button className="btn btn-sm btn-outline-secondary" aria-label="Последняя страница" disabled={currentPage === pages} onClick={() => { setPage(pages); setSelectedIds([]) }}>»</button>
         </nav>
       </div>
     </section>
     <p className="table-hint">Двойной щелчок по строке — редактирование. «Добавить позицию» при выбранной строке — добавление по образцу.</p>
     {modal && <ComponentForm initial={modal.initial} editing={modal.editing} busy={busy} error={actionError} onClose={() => { setModal(null); setActionError('') }} onSubmit={form => mutate(modal.editing ? 'Edit' : 'Add', form, modal.id)} />}
     {deliveriesOpen && <ExpectedDeliveries deliveries={deliveries} loading={deliveriesLoading} onClose={() => setDeliveriesOpen(false)} onReload={reloadDeliveries} onConfirmed={showConfirmedDelivery} onNotice={setNotice} />}
-    {specificationsOpen && <Specifications specifications={specifications} components={components} selectedComponent={selected} loading={specificationsLoading} onClose={() => setSpecificationsOpen(false)} onReload={reloadSpecifications} onDeliveryCreated={reloadDeliveries} onNotice={setNotice} />}
+    {specificationsOpen && <Specifications specifications={specifications} components={components} selectedComponents={selectedComponents} loading={specificationsLoading} onClose={() => setSpecificationsOpen(false)} onReload={reloadSpecifications} onStockReload={reload} onDeliveryCreated={reloadDeliveries} onNotice={setNotice} onSelectionClear={() => setSelectedIds([])} />}
   </main>
 }

@@ -174,6 +174,33 @@ export async function addSpecificationItem(specificationId: string, item: Specif
 }
 
 
+export async function addSelectedSpecificationItems(specificationId: string, componentIds: string[]) {
+  const response = await fetch(appPath(`/specifications/${specificationId}/selected-items`), {
+    method: 'POST', credentials: 'same-origin',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ componentIds }),
+  })
+  await checkResponse(response)
+  return response.json() as Promise<{ added: number; incremented: number; missing: string[] }>
+}
+
+
+export interface SpecificationWriteOffResult {
+  writtenOffPositions: number
+  writtenOffQuantity: string
+  unmatched: Array<{ itemId: string; name: string; requiredQuantity: string }>
+  insufficient: Array<{ componentId: string; name: string; requiredQuantity: string; stockQuantity: string }>
+}
+
+export async function writeOffSpecification(specificationId: string) {
+  const response = await fetch(appPath(`/specifications/${specificationId}/write-off`), {
+    method: 'POST', credentials: 'same-origin', headers: csrfHeaders(),
+  })
+  await checkResponse(response)
+  return response.json() as Promise<SpecificationWriteOffResult>
+}
+
+
 export async function updateSpecificationItem(specificationId: string, itemId: string, item: SpecificationItemForm) {
   const response = await fetch(appPath(`/specifications/${specificationId}/items/${itemId}`), {
     method: 'PUT', credentials: 'same-origin',

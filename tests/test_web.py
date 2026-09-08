@@ -402,6 +402,76 @@ class ComponentApiTest(unittest.TestCase):
         self.assertEqual(item['requiredQuantity'], '4')
         self.assertEqual(item['status'], 'enough')
 
+    def test_selected_components_are_added_or_incremented_in_specification(self):
+        self.post('Add')
+        self.post('Add', name='Another part', value='22')
+        created = self.client.post(
+            '/specifications', json={'name': 'Групповое добавление', 'deviceQuantity': 1},
+            headers=self.headers,
+        )
+        specification_id = created.json['id']
+        self.assertEqual(self.client.post(
+            f'/specifications/{specification_id}/items',
+            json={'componentId': '1', 'quantityPerDevice': '2'},
+            headers=self.headers,
+        ).status_code, 201)
+
+        updated = self.client.post(
+            f'/specifications/{specification_id}/selected-items',
+            json={'componentIds': ['1', '2']}, headers=self.headers,
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json, {'added': 1, 'incremented': 1, 'missing': []})
+        items = self.client.get('/specifications', headers=self.headers).json['data'][0]['items']
+        self.assertEqual(len(items), 2)
+        self.assertEqual({item['componentId']: item['quantityPerDevice'] for item in items}, {
+            '1': '3',
+            '2': '1',
+        })
+
+        missing = self.client.post(
+            f'/specifications/{specification_id}/selected-items',
+            json={'componentIds': ['1', '999']}, headers=self.headers,
+        )
+        self.assertEqual(missing.status_code, 404)
+        items = self.client.get('/specifications', headers=self.headers).json['data'][0]['items']
+        self.assertEqual({item['componentId']: item['quantityPerDevice'] for item in items}['1'], '3')
+
+    def test_specification_write_off_skips_unmatched_and_uses_available_stock(self):
+        self.post('Add', cnt='10')
+        self.post('Add', name='Low stock', value='22', cnt='2')
+        specification_id = self.client.post(
+            '/specifications', json={'name': 'Списание', 'deviceQuantity': 3},
+            headers=self.headers,
+        ).json['id']
+        for item in (
+            {'componentId': '1', 'quantityPerDevice': '2'},
+            {'componentId': '2', 'quantityPerDevice': '1'},
+            {
+                'componentId': '', 'group': 'Прочее', 'name': 'Нет на складе',
+                'value': '', 'unit': '', 'tol': '', 'description': '',
+                'case': '', 'manufacturer': '', 'quantityPerDevice': '4',
+            },
+        ):
+            self.assertEqual(self.client.post(
+                f'/specifications/{specification_id}/items', json=item, headers=self.headers,
+            ).status_code, 201)
+
+        response = self.client.post(
+            f'/specifications/{specification_id}/write-off', headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['writtenOffPositions'], 2)
+        self.assertEqual(response.json['writtenOffQuantity'], '8')
+        self.assertEqual(len(response.json['unmatched']), 1)
+        self.assertEqual(response.json['unmatched'][0]['requiredQuantity'], '12')
+        self.assertEqual(len(response.json['insufficient']), 1)
+        self.assertEqual(response.json['insufficient'][0]['componentId'], '2')
+        self.assertEqual(response.json['insufficient'][0]['requiredQuantity'], '3')
+        self.assertEqual(response.json['insufficient'][0]['stockQuantity'], '2')
+        quantities = {str(row[0]): row[9] for row in self.rows()}
+        self.assertEqual(quantities, {'1': 4, '2': 0})
+
     def test_specification_import_matches_passive_parameters_and_exports_orders(self):
         self.post('Add', cnt='3', description='')
         response = self.client.post(
