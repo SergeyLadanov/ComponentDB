@@ -172,6 +172,7 @@ h1 { font-size: 30px; letter-spacing: -.8px; font-weight: 650; margin-bottom: 8p
 .specification-status { display: inline-block; min-width: 98px; padding: 4px 7px; border-radius: 5px; text-align: center; white-space: nowrap; font-weight: 600; }
 .specification-status.enough { background: rgb(25 135 84 / 12%); color: var(--bs-success); }
 .specification-status.shortage, .specification-status.unmatched { background: rgb(220 53 69 / 10%); color: var(--bs-danger); }
+.specification-status.pending { background: rgb(13 110 253 / 12%); color: var(--bs-primary); }
 .specification-pick-button { display: block; margin: 4px auto 0; padding: 0; border: 0; background: transparent; color: var(--bs-link-color); font-size: 10px; white-space: nowrap; }
 .specification-pick-button:hover { text-decoration: underline; }
 .specification-row-unmatched td { background: rgb(220 53 69 / 3%); }

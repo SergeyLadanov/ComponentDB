@@ -676,13 +676,14 @@ def buildSpecificationOrderRows(specification, items, components, include_all=Fa
         }
         key = ("component", item.ComponentID) if component is not None else (
             "parameters", item.Type, item.ManufacturerPartNumber, item.Value,
-            item.Units, item.Tolerance, item.Case, item.Manufacturer,
+            item.Units, item.Tolerance, item.Description, item.Case, item.Manufacturer,
         )
         row = grouped.setdefault(key, {
             "componentId": str(component.ID) if component is not None else "",
             "group": display["group"], "name": display["name"],
             "value": display["value"], "unit": display["unit"],
-            "tol": display["tol"], "case": display["case"],
+            "tol": display["tol"], "description": display["description"],
+            "case": display["case"],
             "manufacturer": display["manufacturer"],
             "required": 0, "stock": component.Quantity if component is not None else 0,
             "cellnum": component.CellNumber if component is not None else "",

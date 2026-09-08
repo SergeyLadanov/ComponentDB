@@ -424,7 +424,21 @@ class ComponentApiTest(unittest.TestCase):
         self.assertEqual(exported.status_code, 200)
         workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
         values = list(workbook.active.values)
-        self.assertEqual(values[1][8:11], (4, 3, 1))
+        self.assertEqual(values, [
+            ('#', 'Тип элемента', 'Наименование', 'Количество'),
+            (1, 'Резистор', 'RC0603 10 кОм 1% 0603 Yageo', 1),
+        ])
+        workbook.close()
+
+        exported = self.client.get(
+            f'/specifications/{specification_id}/export?scope=all', headers=self.headers,
+        )
+        workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
+        values = list(workbook.active.values)
+        self.assertEqual(values, [
+            ('#', 'Тип элемента', 'Наименование', 'Количество'),
+            (1, 'Резистор', 'RC0603 10 кОм 1% 0603 Yageo', 4),
+        ])
         workbook.close()
 
     def test_unmatched_specification_item_is_included_in_reorder_export(self):
@@ -435,8 +449,9 @@ class ComponentApiTest(unittest.TestCase):
         specification_id = created.json['id']
         item = {
             'componentId': '', 'group': 'Конденсатор', 'name': '',
-            'value': '100', 'unit': 'нФ', 'tol': '10%', 'description': '',
-            'case': '0603', 'manufacturer': '', 'quantityPerDevice': '3',
+            'value': '100', 'unit': 'нФ', 'tol': '10%',
+            'description': 'Керамический\nX7R', 'case': '0603',
+            'manufacturer': 'Murata', 'quantityPerDevice': '3',
         }
         self.assertEqual(self.client.post(
             f'/specifications/{specification_id}/items', json=item, headers=self.headers,
@@ -444,9 +459,16 @@ class ComponentApiTest(unittest.TestCase):
         specification = self.client.get('/specifications', headers=self.headers).json['data'][0]
         self.assertEqual(specification['items'][0]['status'], 'unmatched')
         self.assertEqual(specification['summary']['toOrder'], 12)
-        self.assertEqual(self.client.get(
+        exported = self.client.get(
             f'/specifications/{specification_id}/export', headers=self.headers,
-        ).status_code, 200)
+        )
+        self.assertEqual(exported.status_code, 200)
+        workbook = __import__('openpyxl').load_workbook(BytesIO(exported.data), data_only=True)
+        self.assertEqual(list(workbook.active.values), [
+            ('#', 'Тип элемента', 'Наименование', 'Количество'),
+            (1, 'Конденсатор', '100 нФ 10% Керамический X7R 0603 Murata', 12),
+        ])
+        workbook.close()
 
     def test_unmatched_specification_is_rematched_after_stock_appears(self):
         created = self.client.post(

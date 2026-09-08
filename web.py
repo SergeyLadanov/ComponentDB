@@ -342,24 +342,29 @@ def export_specification(specification_id):
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = 'Дозаказ' if not include_all else 'Потребность'
-    headers = [
-        'ID компонента', 'Классификация', 'Наименование', 'Значение', 'Ед. изм.',
-        'Точность', 'Корпус', 'Производитель', 'Требуется', 'На складе',
-        'К дозаказу', 'Ячейка', 'Сопоставлено',
-    ]
+    headers = ['#', 'Тип элемента', 'Наименование', 'Количество']
     sheet.append(headers)
     for cell in sheet[1]:
         cell.font = Font(bold=True, color='FFFFFF')
         cell.fill = PatternFill('solid', fgColor='18746C')
-    for row in rows:
+    for number, row in enumerate(rows, start=1):
+        name_parts = []
+        for value in (
+            row['name'], row['value'], row['unit'], row['tol'],
+            row['description'], row['case'], row['manufacturer'],
+        ):
+            value = ' '.join(str(value or '').split())
+            if value and value != '-':
+                name_parts.append(value)
         sheet.append([
-            row['componentId'], row['group'], row['name'], row['value'], row['unit'],
-            row['tol'], row['case'], row['manufacturer'], row['required'], row['stock'],
-            row['toOrder'], row['cellnum'], 'Да' if row['matched'] else 'Нет',
+            number,
+            row['group'],
+            ' '.join(name_parts),
+            row['required'] if include_all else row['toOrder'],
         ])
     sheet.freeze_panes = 'A2'
     sheet.auto_filter.ref = sheet.dimensions
-    widths = [15, 24, 28, 12, 12, 12, 14, 22, 12, 12, 14, 14, 15]
+    widths = [8, 24, 80, 14]
     for index, width in enumerate(widths, start=1):
         sheet.column_dimensions[chr(64 + index)].width = width
     output = BytesIO()

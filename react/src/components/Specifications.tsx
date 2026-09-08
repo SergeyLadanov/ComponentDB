@@ -80,6 +80,7 @@ export default function Specifications({ specifications, components, selectedCom
     id: component.id,
     label: `${component.id} — ${component.name || component.group}${component.value ? `, ${component.value} ${component.unit}` : ''}, ${component.case || 'без корпуса'}`,
   })), [components])
+  const componentsById = useMemo(() => new Map(components.map(component => [component.id, component])), [components])
   const pickerResults = useMemo(() => {
     const terms = pickerSearch.toLocaleLowerCase('ru').trim().split(/\s+/).filter(Boolean)
     if (!terms.length) return components.slice(0, 50)
@@ -116,9 +117,10 @@ export default function Specifications({ specifications, components, selectedCom
     setBusy(true); setError('')
     try {
       if (headerDirty) await updateSpecification(selected.id, headerName, deviceQuantity)
-      await Promise.all(selected.items.filter(item => dirty[item.id]).map(item =>
-        updateSpecificationItem(selected.id, item.id, drafts[item.id])
-      ))
+      const changedItems = selected.items.filter(item => dirty[item.id])
+      for (const item of changedItems) {
+        await updateSpecificationItem(selected.id, item.id, drafts[item.id])
+      }
       setDirty(current => Object.fromEntries(Object.entries(current).filter(([id]) => !selected.items.some(item => item.id === id))))
       await onReload()
       onNotice('Спецификация сохранена и пересчитана.')
@@ -215,11 +217,14 @@ export default function Specifications({ specifications, components, selectedCom
               <thead><tr>{fields.map(field => <th key={field.key} style={{ minWidth: field.width }}>{field.title}</th>)}<th>Требуется</th><th>Склад</th><th>Результат</th><th /></tr></thead>
               <tbody>{selected.items.map(item => {
                 const draft = drafts[item.id] || toDraft(item)
-                return <tr key={item.id} className={`specification-row-${item.status}`}>
+                const draftComponent = componentsById.get(draft.componentId)
+                const linkChanged = Boolean(dirty[item.id] && draftComponent && draft.componentId !== item.componentId)
+                const displayStatus = linkChanged ? 'pending' : item.status
+                return <tr key={item.id} className={`specification-row-${displayStatus}`}>
                   {fields.map(field => <td key={field.key}><input className="form-control form-control-sm" type={field.type || 'text'} min={field.type === 'number' ? 1 : undefined} step={field.type === 'number' ? 1 : undefined} list={field.key === 'componentId' ? 'specification-components' : field.key === 'group' ? 'specification-types' : undefined} value={draft[field.key]} aria-label={field.title} onChange={event => change(item, field.key, event.target.value)} /></td>)}
                   <td className="specification-number">{item.requiredQuantity}</td>
-                  <td className="specification-number">{item.stockQuantity}</td>
-                  <td><span className={`specification-status ${item.status}`}>{statusText(item)}</span><button className="specification-pick-button" disabled={busy} onClick={() => openPicker(item)}>{item.status === 'unmatched' ? 'Найти на складе' : 'Изменить связь'}</button></td>
+                  <td className="specification-number">{linkChanged ? draftComponent?.cnt : item.stockQuantity}</td>
+                  <td><span className={`specification-status ${displayStatus}`}>{linkChanged ? `Связь №${draft.componentId} выбрана` : statusText(item)}</span><button className="specification-pick-button" disabled={busy} onClick={() => openPicker(item)}>{draft.componentId ? 'Изменить связь' : 'Найти на складе'}</button></td>
                   <td><button className="btn btn-sm btn-outline-danger delivery-delete-button" aria-label="Удалить позицию" disabled={busy} onClick={() => void removeItem(item)}>×</button></td>
                 </tr>
               })}</tbody>
@@ -239,7 +244,7 @@ export default function Specifications({ specifications, components, selectedCom
           </table>
           {pickerResults.length === 0 && <div className="component-picker-empty">На складе ничего не найдено. Измените поисковый запрос.</div>}
         </div>
-        <div className="component-picker-footer">После выбора нажмите «Сохранить и пересчитать» в спецификации.</div>
+        <div className="component-picker-footer">Выбранная связь сразу появится в строке. Для её сохранения нажмите «Сохранить и пересчитать».</div>
       </section>
     </div>}
     <div className="dialog-footer specification-footer">
